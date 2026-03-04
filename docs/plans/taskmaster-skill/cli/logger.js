@@ -158,12 +158,15 @@ export async function logTaskAdded(plan, task, options = {}) {
 /**
  * 快捷方法：记录任务归档
  */
-export async function logTaskArchived(plan, taskId) {
+export async function logTaskArchived(plan, taskId, options = {}) {
   await logOperation({
     operation: 'TASK_ARCHIVED',
     plan,
     taskId,
     result: 'SUCCESS',
+    metadata: {
+      verified: options.verified !== undefined ? options.verified : true,
+    },
   });
 }
 

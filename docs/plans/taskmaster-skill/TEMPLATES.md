@@ -1,403 +1,450 @@
-# TaskMaster Skill 命令模板
+# TaskMaster Command Templates
 
-> 常用命令的快速复制模板
-
----
-
-## 📁 路径说明
-
-所有命令基于 `docs/plans` 目录执行：
-
-```bash
-cd docs/plans
-```
-
-Windows 使用 `taskmaster-skill\task.bat`，Linux/Mac 使用 `./taskmaster-skill/task.sh`
+> Copy-paste ready command templates for Agent execution.
 
 ---
 
-## ⚙️ 配置管理
+## Template Usage
 
-### 查看当前配置
+Replace placeholders:
+- `{plan}` - Plan name (e.g., `mvp_v1`)
+- `{taskId}` - Task ID (e.g., `TASK-001`)
+- `{title}` - Task title
+- Other parameters as specified
 
+## Command Prefix
+
+All commands use this prefix:
 ```bash
-taskmaster-skill\task.bat config list
+node cli/task.js <command>
 ```
 
-### 添加计划配置
-
+Or via shortcut scripts (Windows/Linux/Mac):
 ```bash
-taskmaster-skill\task.bat config add <name> <path> --description "描述"
-
-# 示例
-taskmaster-skill\task.bat config add mvp_v2 E:\projects\mvp_v2 --description "MVP v2 计划"
+taskmaster-skill\task.bat <plan> <command>    # Windows
+./taskmaster-skill/task.sh <plan> <command>  # Linux/Mac
 ```
 
-### 移除计划配置
+In templates below, `task` is shorthand for `node cli/task.js`.
 
+---
+
+## Configuration Template (REQUIRED)
+
+**Step 1: Create config.json from template**
 ```bash
-taskmaster-skill\task.bat config remove <name>
+cp config.json.template config.json
 ```
 
-### 设置默认计划
+**Step 2: Edit config.json with your plan path**
+```json
+{
+  "version": "1.0.0",
+  "plans": {
+    "{plan-name}": {
+      "path": "{absolute-path-to-plan}",
+      "description": "{plan-description}"
+    }
+  },
+  "settings": {
+    "defaultPlan": "{plan-name}",
+    "autoCreatePlan": false,
+    "logRetentionDays": 30
+  }
+}
+```
 
+**Example config.json:**
+```json
+{
+  "version": "1.0.0",
+  "plans": {
+    "mvp_v1": {
+      "path": "E:\\Agent\\agent-fabric\\docs\\plans\\mvp_v1",
+      "description": "AgentFabric MVP v1"
+    }
+  },
+  "settings": {
+    "defaultPlan": "mvp_v1",
+    "autoCreatePlan": false,
+    "logRetentionDays": 30
+  }
+}
+```
+
+**Note:** `config.json` is user-specific and should not be committed to version control.
+
+---
+
+## Query Templates
+
+### View Plans
 ```bash
-taskmaster-skill\task.bat config set-default <name>
+task plans
+```
+
+### View Progress
+```bash
+# Basic
+task progress {plan}
+
+# Example
+task progress mvp_v1
+```
+
+### List Tasks
+```bash
+# All tasks
+task list {plan}
+
+# Pending P0 tasks (high priority)
+task list {plan} --status pending --priority P0
+
+# In progress tasks
+task list {plan} --status in_progress
+
+# Completed tasks
+task list {plan} --status completed
+
+# By phase
+task list {plan} --phase "Phase 1"
+
+# Include archived
+task list {plan} --archived
+
+# Combined filters
+task list {plan} --phase "Phase 1" --priority P0 --status pending
+```
+
+### View Task Details
+```bash
+task show {plan} {taskId}
+
+# Example
+task show mvp_v1 TASK-001
+```
+
+### View Dependencies
+```bash
+# Basic
+task deps {plan} {taskId}
+
+# Recursive (show nested deps)
+task deps {plan} {taskId} --recursive
+
+# Examples
+task deps mvp_v1 TASK-011
+task deps mvp_v1 TASK-011 --recursive
+```
+
+### View Logs
+```bash
+# Recent logs
+task logs
+
+# More entries
+task logs -n 50
+
+# By plan
+task logs -p {plan}
+
+# By operation type
+task logs -o STATUS_CHANGE
+task logs -o VERIFY_TASK
+task logs -o TASK_ARCHIVED
+
+# Combined
+task logs -p {plan} -o VERIFY_TASK -n 20
+```
+
+### Export Report
+```bash
+# Default output
+task report {plan}
+
+# Custom path
+task report {plan} -o ./reports/{plan}_weekly.json
+
+# Example
+task report mvp_v1 -o ./reports/mvp_v1_$(date +%Y%m%d).json
 ```
 
 ---
 
-## 📊 查看类命令
+## Action Templates
 
-### 查看所有计划
-
+### Start Task
 ```bash
-taskmaster-skill\task.bat plans
+# Standard (checks dependencies)
+task start {plan} {taskId}
+
+# Force (skip dependency check)
+task start {plan} {taskId} --force
+
+# Examples
+task start mvp_v1 TASK-001
+task start mvp_v1 TASK-001 --force
 ```
 
-### 查看整体进度
-
+### Complete Task
 ```bash
-taskmaster-skill\task.bat progress <plan>
+task done {plan} {taskId}
+
+# Example
+task done mvp_v1 TASK-001
 ```
 
-### 列出所有任务
-
+### Verify Task
 ```bash
-taskmaster-skill\task.bat list <plan>
+# Basic
+task verify {plan} {taskId}
+
+# Verbose (show file paths)
+task verify {plan} {taskId} --verbose
+
+# Skip artifact check
+task verify {plan} {taskId} --skip-artifacts
+
+# Export report
+task verify {plan} {taskId} --output ./reports/{taskId}_verify.json
+
+# Examples
+task verify mvp_v1 TASK-001
+task verify mvp_v1 TASK-001 --verbose
+task verify mvp_v1 TASK-001 --output ./verify_report.json
 ```
 
-### 列出待办任务
-
+### Block Task
 ```bash
-taskmaster-skill\task.bat list <plan> --status pending
+task block {plan} {taskId}
+
+# Example
+task block mvp_v1 TASK-001
 ```
 
-### 列出进行中任务
-
+### Archive Task
 ```bash
-taskmaster-skill\task.bat list <plan> --status in_progress
+# Standard (requires verification)
+task archive {plan} {taskId}
+
+# Force (skip verification)
+task archive {plan} {taskId} --force
+
+# Examples
+task archive mvp_v1 TASK-001
+task archive mvp_v1 TASK-001 --force
 ```
 
-### 列出已完成任务
-
+### Unarchive Task
 ```bash
-taskmaster-skill\task.bat list <plan> --status completed
-```
+task unarchive {plan} {taskId}
 
-### 列出阻塞任务
-
-```bash
-taskmaster-skill\task.bat list <plan> --status blocked
-```
-
-### 列出 P0 任务
-
-```bash
-taskmaster-skill\task.bat list <plan> --priority P0
-```
-
-### 列出指定阶段任务
-
-```bash
-taskmaster-skill\task.bat list <plan> --phase phase_1
-```
-
-### 组合过滤
-
-```bash
-taskmaster-skill\task.bat list <plan> --phase phase_1 --priority P0 --status pending
-```
-
----
-
-## 📋 任务详情
-
-### 查看任务详情
-
-```bash
-taskmaster-skill\task.bat show <plan> <task-id>
-```
-
----
-
-## 🚀 状态更新
-
-### 开始任务
-
-```bash
-taskmaster-skill\task.bat start <plan> <task-id>
-```
-
-### 强制开始（忽略依赖）
-
-```bash
-taskmaster-skill\task.bat start <plan> <task-id> --force
-```
-
-### 完成任务
-
-```bash
-taskmaster-skill\task.bat done <plan> <task-id>
-```
-
-### 标记阻塞
-
-```bash
-taskmaster-skill\task.bat block <plan> <task-id>
-```
-
-### 归档任务
-
-```bash
-taskmaster-skill\task.bat archive <plan> <task-id>
-```
-
-### 取消归档
-
-```bash
-taskmaster-skill\task.bat unarchive <plan> <task-id>
-```
-
-### 查看已归档任务
-
-```bash
-taskmaster-skill\task.bat list <plan> --archived
+# Example
+task unarchive mvp_v1 TASK-001
 ```
 
 ---
 
-## ➕ 添加任务
+## Management Templates
 
-### 最小化添加
-
+### Add Task
 ```bash
-taskmaster-skill\task.bat add <plan> -t "任务标题"
-```
+# Minimal (title only)
+task add {plan} -t "{title}"
 
-### 完整添加（Windows）
+# Standard
+task add {plan} \
+  -t "{title}" \
+  -p "{phase}" \
+  -P "{priority}" \
+  -d "{description}"
 
-```batch
-taskmaster-skill\task.bat add <plan> ^
-  -t "任务标题" ^
-  -p "Phase 1" ^
-  -P "P0" ^
-  -d "任务描述" ^
-  --depends "TASK-001,TASK-002" ^
-  --criteria "标准1^标准2^标准3" ^
-  --artifacts "file1.ts,file2.ts" ^
-  --background "任务背景" ^
-  --goals "任务目标" ^
-  --tech "技术要求" ^
-  --steps "步骤1^步骤2^步骤3" ^
-  --notes "备注" ^
-  --references "参考资料"
-```
+# Full
+task add {plan} \
+  -t "{title}" \
+  -p "{phase}" \
+  -P "{priority}" \
+  -d "{description}" \
+  --depends "{dep1},{dep2}" \
+  --criteria "{criterion1}
+{criterion2}
+{criterion3}" \
+  --artifacts "{file1},{file2},{file3}" \
+  --background "{background}" \
+  --goals "{goals}" \
+  --tech "{technical_requirements}" \
+  --steps "{step1}
+{step2}
+{step3}" \
+  --notes "{notes}" \
+  --references "{references}"
 
-### 完整添加（Linux/Mac）
-
-```bash
-./taskmaster-skill/task.sh add <plan> \
-  -t "任务标题" \
-  -p "Phase 1" \
+# Example
+task add mvp_v1 \
+  -t "实现 JWT 认证" \
+  -p "Phase 2" \
   -P "P0" \
-  -d "任务描述" \
-  --depends "TASK-001,TASK-002" \
-  --criteria "标准1
-标准2
-标准3" \
-  --artifacts "file1.ts,file2.ts" \
-  --background "任务背景" \
-  --goals "任务目标" \
-  --tech "技术要求" \
-  --steps "步骤1
-步骤2
-步骤3" \
-  --notes "备注" \
-  --references "参考资料"
+  -d "实现基于 JWT 的 API 认证" \
+  --depends "TASK-002,TASK-007" \
+  --criteria "支持 Bearer Token
+支持 Token 刷新
+错误返回 401" \
+  --artifacts "src/middleware/auth.ts,src/services/jwt.ts"
+```
+
+### Edit Task
+```bash
+# Edit basic fields
+task edit {plan} {taskId} -t "{new_title}" -P {new_priority}
+
+# Add criteria
+task edit {plan} {taskId} --criteria "{new_criterion}"
+
+# Add artifacts
+task edit {plan} {taskId} --artifacts "{new_file}"
+
+# Example
+task edit mvp_v1 TASK-001 -P P0 --criteria "新增标准"
+```
+
+### Delete Task
+```bash
+# With confirmation (recommended)
+task delete {plan} {taskId}
+
+# Force (no confirmation)
+task delete {plan} {taskId} --force
+
+# Example
+task delete mvp_v1 TASK-001 --force
 ```
 
 ---
 
-## ✏️ 编辑任务
+## Config Templates
 
-### 编辑任务基础信息
-
+### View Config
 ```bash
-taskmaster-skill\task.bat edit <plan> <task-id> -t "新标题" -d "新描述"
+task config list
 ```
 
-### 追加验收标准
-
+### Add Plan
 ```bash
-taskmaster-skill\task.bat edit <plan> <task-id> --criteria "新标准1^新标准2"
+task config add {name} {path} --description "{description}"
+
+# Example
+task config add mvp_v2 E:\projects\mvp_v2 --description "MVP v2 计划"
 ```
 
-### 追加输出产物
-
+### Remove Plan
 ```bash
-taskmaster-skill\task.bat edit <plan> <task-id> --artifacts "file3.ts,file4.ts"
+task config remove {name}
+
+# Example
+task config remove mvp_v2
 ```
 
----
-
-## 🗑️ 删除任务
-
-### 删除任务（需确认）
-
+### Set Default
 ```bash
-taskmaster-skill\task.bat delete <plan> <task-id>
-```
+task config set-default {name}
 
-### 强制删除
-
-```bash
-taskmaster-skill\task.bat delete <plan> <task-id> --force
+# Example
+task config set-default mvp_v1
 ```
 
 ---
 
-## 📜 操作日志
+## Workflow Templates
 
-### 查看最近日志
-
+### Daily Standup
 ```bash
-taskmaster-skill\task.bat logs
-taskmaster-skill\task.bat logs -n 50
+# 1. Check progress
+task progress {plan}
+
+# 2. Check in-progress
+task list {plan} --status in_progress
+
+# 3. Check pending P0
+task list {plan} --status pending --priority P0
 ```
 
-### 按计划过滤
-
+### Start New Task
 ```bash
-taskmaster-skill\task.bat logs -p mvp_v1
+# 1. Check dependencies
+task deps {plan} {taskId}
+
+# 2. View details (if needed)
+task show {plan} {taskId}
+
+# 3. Start
+task start {plan} {taskId}
 ```
 
-### 按操作类型过滤
-
+### Complete and Archive
 ```bash
-taskmaster-skill\task.bat logs -o STATUS_CHANGE
+# 1. Mark done
+task done {plan} {taskId}
+
+# 2. Verify
+task verify {plan} {taskId}
+
+# 3. Archive (if verification passes)
+task archive {plan} {taskId}
 ```
 
----
-
-## 📊 操作报告
-
-### 导出报告
-
+### Weekly Report
 ```bash
-taskmaster-skill\task.bat report mvp_v1
-taskmaster-skill\task.bat report mvp_v1 -o ./reports/mvp_v1.json
+# 1. Get progress
+task progress {plan}
+
+# 2. Get recent activity
+task logs -p {plan} -n 50
+
+# 3. Export report
+task report {plan} -o ./reports/weekly_$(date +%Y%m%d).json
 ```
 
----
-
-## 📝 实际替换示例
-
-将以下模板中的占位符替换为实际值：
-
-- `<plan>` → `mvp_v1`
-- `<task-id>` → `TASK-001`
-- `任务标题` → 具体任务名称
-- `Phase 1` → 实际阶段
-- `P0` → 实际优先级
-- `TASK-001,TASK-002` → 实际依赖任务ID
-
----
-
-## 🔥 日常快捷键
-
-### Linux/Mac (创建别名)
-
+### Batch Operations
 ```bash
-alias task='~/projects/agent-fabric/docs/plans/taskmaster-skill/task.sh'
-alias tp='task progress mvp_v1'
-alias tl='task list mvp_v1'
-alias ts='task show mvp_v1'
-alias ta='task add mvp_v1'
-```
+# Complete multiple tasks
+for task in TASK-001 TASK-002 TASK-003; do
+  task done {plan} $task
+  task verify {plan} $task
+done
 
-### Windows (创建 task.cmd)
-
-```batch
-@echo off
-call E:\Agent\agent-fabric\docs\plans\taskmaster-skill\task.bat %*
-```
-
----
-
-## 📊 常用查询组合
-
-### 今日工作清单
-
-```bash
-taskmaster-skill\task.bat list mvp_v1 --status in_progress
-taskmaster-skill\task.bat list mvp_v1 --status pending --priority P0
-```
-
-### 本周完成
-
-```bash
-taskmaster-skill\task.bat list mvp_v1 --status completed
-```
-
-### 阻塞关注
-
-```bash
-taskmaster-skill\task.bat list mvp_v1 --status blocked
-```
-
-### 阶段概览（Bash）
-
-```bash
-for phase in phase_1 phase_2 phase_3 phase_4 phase_5 phase_6; do
-  echo "=== $phase ==="
-  taskmaster-skill/task.sh list mvp_v1 --phase $phase --status pending
+# Archive verified tasks
+for task in TASK-001 TASK-002 TASK-003; do
+  task archive {plan} $task
 done
 ```
 
 ---
 
-## 💡 添加任务模板
+## Aliases
 
-### 功能开发任务
+| Alias | Full Command |
+|-------|--------------|
+| `task ls {plan}` | `task list {plan}` |
+| `task p {plan}` | `task progress {plan}` |
 
-```bash
-task add <plan> \
-  -t "实现XXX功能" \
-  -p "Phase X" \
-  -P "P1" \
-  -d "实现XXX功能，支持YYY" \
-  --depends "TASK-XXX" \
-  --criteria "功能A正常工作
-边界情况处理
-单元测试覆盖>80%" \
-  --artifacts "src/modules/xxx.ts,tests/xxx.test.ts"
-```
+---
 
-### Bug 修复任务
+## Parameter Quick Reference
 
-```bash
-task add <plan> \
-  -t "修复XXX问题" \
-  -p "Phase X" \
-  -P "P0" \
-  -d "修复生产环境的XXX问题" \
-  --criteria "定位问题根因
-实现修复方案
-回归测试通过" \
-  --artifacts "src/bugfix/xxx.ts"
-```
+### Status Values
+- `pending` - 待开始
+- `in_progress` - 进行中
+- `completed` - 已完成
+- `blocked` - 已阻塞
 
-### 文档任务
+### Priority Values
+- `P0` - Must complete
+- `P1` - Important (default)
+- `P2` - Optional
 
-```bash
-task add <plan> \
-  -t "编写XXX文档" \
-  -p "Phase X" \
-  -P "P1" \
-  -d "编写XXX的使用文档" \
-  --criteria "文档结构清晰
-包含使用示例
-API说明完整" \
-  --artifacts "docs/xxx.md"
-```
+### Operation Types (for logs)
+- `STATUS_CHANGE`
+- `VERIFY_TASK`
+- `TASK_ARCHIVED`
+- `TASK_ADDED`
+- `TASK_DELETED`

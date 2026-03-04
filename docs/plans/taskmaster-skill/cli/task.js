@@ -166,6 +166,82 @@ function checkDependencies(task, allTasks) {
   };
 }
 
+// 列出可开始的任务
+async function listReadyTasks(planName, options = {}) {
+  const data = await loadData(planName);
+  const allTasks = data.tasks;
+  
+  // 获取限制数量，默认10条
+  const limit = parseInt(options.limit, 10) || 10;
+  
+  // 过滤出可开始的任务：pending 状态且所有依赖都已完成
+  const readyTasks = allTasks
+    .filter(task => {
+      // 只显示待开始的任务
+      if (task.status !== 'pending') return false;
+      // 排除已归档的任务
+      if (task.archived) return false;
+      // 检查依赖是否全部完成
+      const depCheck = checkDependencies(task, allTasks);
+      return depCheck.ready;
+    })
+    .slice(0, limit);
+  
+  if (readyTasks.length === 0) {
+    console.log(chalk.yellow('\n⚠️  当前没有可开始的任务\n'));
+    console.log(chalk.gray('提示：'));
+    console.log(chalk.gray('  - 使用 "task list <plan> --status pending" 查看所有待开始任务'));
+    console.log(chalk.gray('  - 使用 "task progress <plan>" 查看整体进度'));
+    console.log('');
+    return;
+  }
+  
+  console.log(chalk.bold(`\n🚀 ${data.meta.title} - 可开始的任务\n`));
+  
+  // 表格输出
+  const table = new Table({
+    head: ['ID', '阶段', '任务', '优先级', '工时'],
+    colWidths: [12, 10, 45, 8, 8],
+    style: { head: ['cyan'] },
+  });
+  
+  readyTasks.forEach(task => {
+    const hours = task.hours ? `${task.hours}h` : '-';
+    table.push([
+      chalk.cyan(task.id),
+      task.phase,
+      task.title.length > 42 ? task.title.substring(0, 40) + '...' : task.title,
+      formatPriority(task.priority),
+      chalk.gray(hours),
+    ]);
+  });
+  
+  console.log(table.toString());
+  
+  // 统计信息
+  const totalReady = allTasks.filter(t => {
+    if (t.status !== 'pending' || t.archived) return false;
+    return checkDependencies(t, allTasks).ready;
+  }).length;
+  
+  console.log(chalk.gray(`\n显示 ${readyTasks.length}/${totalReady} 个可开始任务 (${planName})`));
+  
+  if (totalReady > readyTasks.length) {
+    console.log(chalk.gray(`使用 --limit ${totalReady} 查看全部`));
+  }
+  
+  console.log(chalk.cyan('\n💡 开始任务:'));
+  console.log(chalk.gray(`   task start ${planName} <task-id>`));
+  console.log('');
+  
+  // 记录查询日志
+  await logQuery('LIST_READY_TASKS', planName, { 
+    displayed: readyTasks.length,
+    total: totalReady,
+    limit
+  });
+}
+
 // 列出任务
 async function listTasks(planName, options) {
   const data = await loadData(planName);
@@ -345,18 +421,20 @@ async function updateTaskStatus(planName, taskId, newStatus, options = {}) {
 }
 
 // 归档任务（改为设置 archived 标志）
-async function archiveTask(planName, taskId) {
+async function archiveTask(planName, taskId, options = {}) {
   const data = await loadData(planName);
   const task = data.tasks.find(t => t.id === taskId);
 
   if (!task) {
     console.log(chalk.red(`❌ 任务 ${taskId} 不存在`));
+    await logError('ARCHIVE_TASK', planName, taskId, new Error('任务不存在'));
     process.exit(1);
   }
 
   if (task.status !== 'completed') {
     console.log(chalk.yellow('⚠️  只有已完成的任务才能归档'));
     console.log(`   当前状态: ${formatStatus(task.status)}`);
+    console.log(chalk.gray('   提示: 使用 task done 命令标记完成'));
     process.exit(1);
   }
 
@@ -365,14 +443,37 @@ async function archiveTask(planName, taskId) {
     return;
   }
 
+  // 检查是否已通过核验
+  if (!options.force) {
+    // 读取日志检查是否已核验
+    const logs = await readLogs({ plan: planName, operation: 'VERIFY_TASK', limit: 100 });
+    const verified = logs.some(log => log.taskId === taskId && log.result === 'SUCCESS');
+    
+    if (!verified) {
+      console.log(chalk.yellow(`\n⚠️  任务 ${taskId} 尚未通过核验`));
+      console.log(chalk.cyan('\n📋 归档前必须通过核验检查'));
+      console.log(chalk.gray('   核验命令: task verify ' + planName + ' ' + taskId));
+      console.log(chalk.gray('   跳过核验: task archive ' + planName + ' ' + taskId + ' --force'));
+      console.log('');
+      console.log(chalk.cyan('💡 建议流程：'));
+      console.log('   1. 运行核验: task verify ' + planName + ' ' + taskId);
+      console.log('   2. 检查产物文件和验收标准');
+      console.log('   3. 确认无误后归档\n');
+      process.exit(1);
+    }
+  }
+
   task.archived = true;
   task.archived_at = new Date().toISOString();
   await saveData(planName, data);
 
   console.log(chalk.green(`✅ ${taskId} 已归档`));
+  if (options.force) {
+    console.log(chalk.yellow('   ⚠️  注意: 跳过了核验检查'));
+  }
 
   // 记录归档日志
-  await logTaskArchived(planName, taskId);
+  await logTaskArchived(planName, taskId, { verified: !options.force });
 }
 
 // 取消归档
@@ -403,8 +504,9 @@ async function showProgress(planName) {
   const tasks = data.tasks;
   const activeTasks = tasks.filter(t => !t.archived);
 
-  const total = activeTasks.length;
-  const completed = activeTasks.filter(t => t.status === 'completed').length;
+  // 进度统计包含所有任务（包括已归档），归档任务也算已完成
+  const total = tasks.length;
+  const completed = tasks.filter(t => t.status === 'completed').length;
   const inProgress = activeTasks.filter(t => t.status === 'in_progress').length;
   const pending = activeTasks.filter(t => t.status === 'pending').length;
   const blocked = activeTasks.filter(t => t.status === 'blocked').length;
@@ -443,16 +545,35 @@ async function showProgress(planName) {
     console.log(`  📦 已归档:   ${chalk.gray(archived)}`);
   }
 
-  // 阶段进度
+  // 阶段进度（包含所有任务，包括已归档）
+  // 阶段名称映射：Phase 1 -> 基础架构
+  const phaseNameMap = {};
+  data.phases.forEach(phase => {
+    // 从 phase.id (如 "phase_1") 提取数字
+    const match = phase.id.match(/phase_(\d+)/);
+    if (match) {
+      phaseNameMap[`Phase ${parseInt(match[1], 10)}`] = phase.name;
+      phaseNameMap[phase.name] = phase.name;
+    }
+  });
+
   console.log(chalk.cyan('\n阶段进度:'));
   data.phases.forEach(phase => {
-    const phaseTasks = activeTasks.filter(t => t.phase === phase.name);
+    // 匹配任务的 phase 字段（如 "Phase 1"）
+    const match = phase.id.match(/phase_(\d+)/);
+    const phaseNumber = match ? parseInt(match[1], 10) : 0;
+    const phaseTasks = tasks.filter(t => {
+      // 支持 "Phase 1" 格式或直接使用阶段名
+      return t.phase === `Phase ${phaseNumber}` || t.phase === phase.name;
+    });
     const phaseCompleted = phaseTasks.filter(t => t.status === 'completed').length;
+    const phaseArchived = phaseTasks.filter(t => t.archived).length;
     const phasePercent =
       phaseTasks.length > 0 ? ((phaseCompleted / phaseTasks.length) * 100).toFixed(0) : 0;
     const bar = '█'.repeat(phasePercent / 5) + '░'.repeat(20 - phasePercent / 5);
+    const archivedInfo = phaseArchived > 0 ? chalk.gray(` 已归档${phaseArchived}`) : '';
     console.log(
-      `  ${phase.name.padEnd(8)} [${bar}] ${phasePercent}% (${phaseCompleted}/${phaseTasks.length})`
+      `  ${phase.name.padEnd(8)} [${bar}] ${phasePercent}% (${phaseCompleted}/${phaseTasks.length})${archivedInfo}`
     );
   });
 
@@ -477,6 +598,300 @@ async function showProgress(planName) {
     completed,
     percentage,
   });
+}
+
+// 显示任务依赖关系
+async function showTaskDependencies(planName, taskId, options = {}) {
+  const data = await loadData(planName);
+  const task = data.tasks.find(t => t.id === taskId);
+
+  if (!task) {
+    console.log(chalk.red(`❌ 任务 ${taskId} 不存在`));
+    await logError('SHOW_DEPS', planName, taskId, new Error('任务不存在'));
+    process.exit(1);
+  }
+
+  console.log(chalk.bold(`\n🔗 ${taskId} 依赖关系\n`));
+  console.log(`任务: ${task.title}`);
+  console.log(`状态: ${formatStatus(task.status)}`);
+  console.log('');
+
+  const dependencies = task.dependencies || [];
+  
+  if (dependencies.length === 0) {
+    console.log(chalk.yellow('⚠️  该任务没有依赖'));
+    await logQuery('SHOW_DEPS', planName, { taskId, depCount: 0 });
+    return;
+  }
+
+  console.log(chalk.cyan(`依赖任务 (${dependencies.length} 个):\n`));
+
+  // 获取所有依赖任务的详细信息
+  const depTasks = dependencies.map(depId => {
+    const depTask = data.tasks.find(t => t.id === depId);
+    return {
+      id: depId,
+      task: depTask,
+      exists: !!depTask,
+    };
+  });
+
+  // 统计
+  let completed = 0;
+  let inProgress = 0;
+  let pending = 0;
+  let blocked = 0;
+  let notFound = 0;
+
+  depTasks.forEach(({ id, task: depTask, exists }) => {
+    if (!exists) {
+      console.log(`  ${chalk.red('✗')} ${id}: ${chalk.red('任务不存在')}`);
+      notFound++;
+      return;
+    }
+
+    const isCompleted = depTask.status === 'completed';
+    const isArchived = depTask.archived;
+
+    if (isCompleted) {
+      if (isArchived) {
+        console.log(`  ${chalk.green('✓')} ${id}: ${depTask.title} ${chalk.gray('(已完成 · 已归档)')}`);
+      } else {
+        console.log(`  ${chalk.green('✓')} ${id}: ${depTask.title} ${chalk.gray('(已完成)')}`);
+      }
+      completed++;
+    } else if (depTask.status === 'in_progress') {
+      console.log(`  ${chalk.yellow('▶')} ${id}: ${depTask.title} ${chalk.gray('(进行中)')}`);
+      inProgress++;
+    } else if (depTask.status === 'blocked') {
+      console.log(`  ${chalk.red('⏸')} ${id}: ${depTask.title} ${chalk.gray('(已阻塞)')}`);
+      blocked++;
+    } else {
+      console.log(`  ${chalk.gray('○')} ${id}: ${depTask.title} ${chalk.gray('(待开始)')}`);
+      pending++;
+    }
+
+    // 递归显示依赖（如果启用）
+    if (options.recursive && depTask.dependencies && depTask.dependencies.length > 0) {
+      const nestedDeps = depTask.dependencies;
+      nestedDeps.forEach((nestedId, index) => {
+        const nestedTask = data.tasks.find(t => t.id === nestedId);
+        const isLast = index === nestedDeps.length - 1;
+        const prefix = isLast ? '    └─ ' : '    ├─ ';
+        
+        if (nestedTask) {
+          const status = nestedTask.status === 'completed' 
+            ? chalk.green('✓') 
+            : chalk.gray('○');
+          console.log(`  ${prefix}${status} ${nestedId}: ${nestedTask.title}`);
+        } else {
+          console.log(`  ${prefix}${chalk.red('✗')} ${nestedId}: ${chalk.red('任务不存在')}`);
+        }
+      });
+    }
+  });
+
+  console.log('');
+
+  // 依赖就绪状态
+  const depCheck = checkDependencies(task, data.tasks);
+  
+  if (depCheck.ready) {
+    console.log(chalk.green('✅ 所有依赖已完成，任务可以开始'));
+  } else {
+    console.log(chalk.yellow('⏳ 依赖未就绪，暂不能开始'));
+    if (depCheck.blocking && depCheck.blocking.length > 0) {
+      console.log(chalk.gray(`   阻塞项: ${depCheck.blocking.join(', ')}`));
+    }
+  }
+
+  console.log('');
+
+  // 摘要
+  console.log(chalk.cyan('📊 依赖状态摘要:'));
+  console.log(`  ${chalk.green('✓')} 已完成: ${completed}`);
+  if (inProgress > 0) console.log(`  ${chalk.yellow('▶')} 进行中: ${inProgress}`);
+  if (pending > 0) console.log(`  ${chalk.gray('○')} 待开始: ${pending}`);
+  if (blocked > 0) console.log(`  ${chalk.red('⏸')} 已阻塞: ${blocked}`);
+  if (notFound > 0) console.log(`  ${chalk.red('✗')} 不存在: ${notFound}`);
+  
+  console.log('');
+
+  await logQuery('SHOW_DEPS', planName, { 
+    taskId, 
+    depCount: dependencies.length,
+    completed,
+    ready: depCheck.ready 
+  });
+}
+
+// 核验任务验收标准
+async function verifyTask(planName, taskId, options = {}) {
+  const data = await loadData(planName);
+  const task = data.tasks.find(t => t.id === taskId);
+
+  if (!task) {
+    console.log(chalk.red(`❌ 任务 ${taskId} 不存在`));
+    await logError('VERIFY_TASK', planName, taskId, new Error('任务不存在'));
+    process.exit(1);
+  }
+
+  console.log(chalk.bold(`\n🔍 核验任务: ${taskId} - ${task.title}\n`));
+
+  // 显示任务基本信息
+  console.log(chalk.cyan('任务信息:'));
+  console.log(`  状态: ${formatStatus(task.status)}`);
+  console.log(`  优先级: ${formatPriority(task.priority)}`);
+  console.log(`  阶段: ${task.phase}`);
+  console.log('');
+
+  // 检查验收标准
+  const criteria = task.acceptance_criteria || [];
+  if (criteria.length === 0) {
+    console.log(chalk.yellow('⚠️  该任务没有定义验收标准'));
+    return;
+  }
+
+  console.log(chalk.cyan(`验收标准 (${criteria.length} 项):`));
+  console.log('');
+
+  // 自动检查产物文件
+  const artifacts = task.artifacts || [];
+  const artifactStatus = [];
+  
+  if (artifacts.length > 0 && !options.skipArtifacts) {
+    console.log(chalk.cyan('📦 产物文件检查:'));
+    const planPath = await getPlanPath(planName);
+    
+    for (const artifact of artifacts) {
+      // 尝试多种路径解析方式
+      const possiblePaths = [
+        path.join(planPath, artifact),
+        path.join(planPath, '..', '..', '..', artifact),
+        path.resolve(artifact),
+      ];
+      
+      let found = false;
+      let foundPath = '';
+      
+      for (const tryPath of possiblePaths) {
+        try {
+          await fs.access(tryPath);
+          found = true;
+          foundPath = tryPath;
+          break;
+        } catch {
+          continue;
+        }
+      }
+      
+      artifactStatus.push({
+        artifact,
+        exists: found,
+        path: foundPath,
+      });
+      
+      if (found) {
+        console.log(`  ${chalk.green('✓')} ${artifact}`);
+        if (options.verbose) {
+          console.log(`    ${chalk.gray('路径: ' + foundPath)}`);
+        }
+      } else {
+        console.log(`  ${chalk.red('✗')} ${artifact} ${chalk.gray('(未找到)')}`);
+      }
+    }
+    console.log('');
+  }
+
+  // 显示验收标准清单
+  console.log(chalk.cyan('📋 验收标准清单:'));
+  criteria.forEach((criterion, index) => {
+    console.log(`  ${index + 1}. ${criterion}`);
+  });
+  console.log('');
+
+  // 如果是交互模式，让用户确认每项标准
+  let verifiedCount = 0;
+  let failedCount = 0;
+
+  if (options.interactive) {
+    console.log(chalk.yellow('⚠️  交互模式需要在 CLI 中安装 inquirer 包'));
+    console.log(chalk.gray('   运行: npm install inquirer\n'));
+  }
+
+  // 生成核验报告
+  const report = {
+    taskId,
+    taskTitle: task.title,
+    status: task.status,
+    verifiedAt: new Date().toISOString(),
+    criteria: {
+      total: criteria.length,
+      verified: verifiedCount,
+      failed: failedCount,
+    },
+    artifacts: {
+      total: artifacts.length,
+      found: artifactStatus.filter(a => a.exists).length,
+      missing: artifactStatus.filter(a => !a.exists).length,
+      details: artifactStatus,
+    },
+  };
+
+  // 显示核验摘要
+  console.log(chalk.cyan('📊 核验摘要:'));
+  console.log(`  验收标准: ${criteria.length} 项`);
+  
+  if (artifacts.length > 0) {
+    const foundCount = artifactStatus.filter(a => a.exists).length;
+    const artifactPercent = Math.round((foundCount / artifacts.length) * 100);
+    
+    if (foundCount === artifacts.length) {
+      console.log(`  产物文件: ${chalk.green(`${foundCount}/${artifacts.length} (${artifactPercent}%)`)}`);
+    } else {
+      console.log(`  产物文件: ${chalk.yellow(`${foundCount}/${artifacts.length} (${artifactPercent}%)`)}`);
+    }
+  }
+  
+  console.log('');
+
+  // 根据状态给出建议
+  if (task.status !== 'completed') {
+    console.log(chalk.yellow('⚠️  注意: 该任务尚未标记为完成'));
+    console.log(chalk.gray('   使用: task done ' + planName + ' ' + taskId));
+    console.log('');
+  }
+
+  // 如果有缺失的产物文件
+  const missingArtifacts = artifactStatus.filter(a => !a.exists);
+  if (missingArtifacts.length > 0) {
+    console.log(chalk.red('❌ 缺失的产物文件:'));
+    missingArtifacts.forEach(a => {
+      console.log(`   - ${a.artifact}`);
+    });
+    console.log('');
+  }
+
+  // 记录核验操作
+  await logOperation({
+    operation: 'VERIFY_TASK',
+    plan: planName,
+    taskId: taskId,
+    result: 'SUCCESS',
+    metadata: {
+      criteriaCount: criteria.length,
+      artifactCount: artifacts.length,
+      foundArtifacts: artifactStatus.filter(a => a.exists).length,
+    },
+  });
+
+  // 如果指定了输出文件，保存报告
+  if (options.output) {
+    await fs.writeFile(options.output, JSON.stringify(report, null, 2), 'utf-8');
+    console.log(chalk.green(`✅ 核验报告已保存: ${options.output}`));
+  }
+
+  return report;
 }
 
 // 添加新任务
@@ -753,8 +1168,9 @@ program
 program
   .command('archive <plan> <taskId>')
   .description('归档任务')
-  .action(async (plan, taskId) => {
-    await archiveTask(plan, taskId);
+  .option('-f, --force', '强制归档（跳过核验检查）')
+  .action(async (plan, taskId, options) => {
+    await archiveTask(plan, taskId, options);
   });
 
 program
@@ -958,6 +1374,33 @@ program
 
     console.log(table.toString());
     console.log('');
+  });
+
+program
+  .command('deps <plan> <taskId>')
+  .description('列出任务的依赖任务')
+  .option('-r, --recursive', '递归显示依赖的依赖')
+  .action(async (plan, taskId, options) => {
+    await showTaskDependencies(plan, taskId, options);
+  });
+
+program
+  .command('ready <plan>')
+  .description('列出可开始的任务（依赖已完成）')
+  .option('-l, --limit <number>', '显示条数上限', '10')
+  .action(async (plan, options) => {
+    await listReadyTasks(plan, options);
+  });
+
+program
+  .command('verify <plan> <taskId>')
+  .description('核验任务验收标准')
+  .option('-o, --output <path>', '导出核验报告到文件')
+  .option('-v, --verbose', '显示详细信息')
+  .option('--skip-artifacts', '跳过产物文件检查')
+  .option('--interactive', '交互式确认每项标准（需安装 inquirer）')
+  .action(async (plan, taskId, options) => {
+    await verifyTask(plan, taskId, options);
   });
 
 program

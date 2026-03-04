@@ -1,354 +1,431 @@
-# TaskMaster Skill 使用示例
+# TaskMaster Examples
 
-> 常见场景的完整操作示例
-
----
-
-## 场景一：新成员加入项目
-
-### 1. 了解项目概况
-
-```bash
-# 查看有哪些计划（在 docs/plans 目录）
-cd docs/plans
-
-# 查看有哪些计划
-taskmaster-skill\task.bat plans
-
-# 查看 mvp_v1 计划进度
-taskmaster-skill\task.bat progress mvp_v1
-```
-
-### 2. 查看当前进行中的任务
-
-```bash
-# 列出进行中的任务
-taskmaster-skill\task.bat list mvp_v1 --status in_progress
-
-# 查看某个任务的详情
-taskmaster-skill\task.bat show mvp_v1 TASK-002
-```
-
-### 3. 领取新任务
-
-```bash
-# 查看待办的 P0 任务
-taskmaster-skill\task.bat list mvp_v1 --status pending --priority P0
-
-# 查看任务详情
-taskmaster-skill\task.bat show mvp_v1 TASK-005
-
-# 确认依赖已完成，开始任务
-taskmaster-skill\task.bat start mvp_v1 TASK-005
-```
+> Scenario-based execution patterns for Agent reference.
 
 ---
 
-## 场景二：开发流程
+## Example Index
 
-### 步骤 1：开始任务
+| Scenario | User Intent | Reference |
+|----------|-------------|-----------|
+| [新成员加入](#scenario-1-new-member-onboarding) | "如何开始" | Multi-step guidance |
+| [开发流程](#scenario-2-development-workflow) | "开始任务" → "完成任务" | Standard workflow |
+| [项目经理检查](#scenario-3-project-manager-check) | "进度如何" | Progress + reporting |
+| [查看可开始任务](#scenario-4-view-ready-tasks) | "有哪些任务可以开始" | Ready task query |
+| [添加任务](#scenario-5-adding-new-task) | "添加任务" | Parameter collection |
+| [质量核验](#scenario-6-quality-verification) | "核验任务" | Verify workflow |
+| [问题排查](#scenario-7-troubleshooting) | "无法归档" | Error recovery |
 
-```bash
-# 查看任务详情
-taskmaster-skill\task.bat show mvp_v1 TASK-010
+---
 
-# 检查依赖
-taskmaster-skill\task.bat show mvp_v1 TASK-008  # 依赖任务
-taskmaster-skill\task.bat show mvp_v1 TASK-009  # 依赖任务
+## Scenario 1: New Member Onboarding
 
-# 开始任务
-taskmaster-skill\task.bat start mvp_v1 TASK-010
+### User Input
+> "我刚加入项目，想了解情况"
+
+### Agent Execution Flow
+
 ```
+Step 1: List available plans
+  Command: task plans
+  Parse: Show all plans with progress
+  Output to user:
+    "可用计划:
+     - mvp_v1: AgentFabric MVP v1 (8/29 完成)"
 
-### 步骤 2：开发过程中遇到阻塞
+Step 2: Show plan overview
+  Command: task progress mvp_v1
+  Parse: Extract key metrics
+  Output to user:
+    "项目概况:
+     - 总体进度: 27.6%
+     - 已完成: 8/29 任务
+     - 待开始: 21 任务
+     - P0 待办: 5 任务"
 
-```bash
-# 标记任务阻塞
-taskmaster-skill\task.bat block mvp_v1 TASK-010
+Step 3: List pending P0 tasks
+  Command: task list mvp_v1 --status pending --priority P0
+  Parse: Task IDs and titles
+  Output to user:
+    "可开始的 P0 任务:
+     - TASK-008: API 认证机制
+     - TASK-009: 限流与熔断
+     - TASK-013: Agent Registry 实现"
 
-# ... 等待问题解决 ...
-
-# 恢复进行
-taskmaster-skill\task.bat start mvp_v1 TASK-010 --force
-```
-
-### 步骤 3：完成任务
-
-```bash
-# 开发完成，自测通过
-# 代码已提交，文档已更新
-
-# 标记完成
-taskmaster-skill\task.bat done mvp_v1 TASK-010
-
-# 归档
-taskmaster-skill\task.bat archive mvp_v1 TASK-010
+Step 4: Provide next steps
+  Suggest: "使用 '查看 TASK-008 详情' 了解具体任务"
 ```
 
 ---
 
-## 场景三：项目经理检查进度
+## Scenario 2: Development Workflow
 
-### 每日检查
+### Phase A: Starting Task
 
-```bash
-# 查看整体进度
-taskmaster-skill\task.bat progress mvp_v1
+#### User Input
+> "我要开始开发 TASK-011"
 
-# 查看昨天到今天完成的任务
-taskmaster-skill\task.bat list mvp_v1 --status completed
+#### Agent Execution
 
-# 查看进行中的任务
-taskmaster-skill\task.bat list mvp_v1 --status in_progress
-
-# 查看是否有阻塞的任务
-taskmaster-skill\task.bat list mvp_v1 --status blocked
+```
+Step 1: Check dependencies
+  Command: task deps mvp_v1 TASK-011
+  
+  Parse output:
+    IF "所有依赖已完成":
+      Proceed to Step 2
+    IF "依赖未就绪":
+      Extract: TASK-008 (待开始)
+      Ask: "依赖 TASK-008 未完成，是否强制开始？(需要 --force)"
+      
+Step 2: Start task
+  Command: task start mvp_v1 TASK-011
+  Verify: Output contains "状态已更新"
+  Confirm: "TASK-011 已开始"
 ```
 
-### 周总结
+### Phase B: Completing Task
 
-```bash
-# 生成周报数据
-# 1. 总体进度
-taskmaster-skill\task.bat progress mvp_v1
+#### User Input
+> "TASK-011 完成了"
 
-# 2. 各阶段进度
-taskmaster-skill\task.bat list mvp_v1 --phase phase_1
-taskmaster-skill\task.bat list mvp_v1 --phase phase_2
+#### Agent Execution
 
-# 3. 下周计划（待办 P0）
-taskmaster-skill\task.bat list mvp_v1 --status pending --priority P0
 ```
+Step 1: Verify current status
+  Command: task show mvp_v1 TASK-011
+  Check: status is "in_progress"
 
----
+Step 2: Mark complete
+  Command: task done mvp_v1 TASK-011
+  Verify: Output contains "状态已更新"
 
-## 场景四：添加新任务
+Step 3: Execute verification (REQUIRED)
+  Command: task verify mvp_v1 TASK-011
+  
+  Parse:
+    IF "产物文件: X/Y (100%)":
+      can_archive = true
+    IF "缺失的产物文件":
+      can_archive = false
+      Extract: missing files list
 
-### 简单添加
-
-```bash
-# 添加一个简单任务
-taskmaster-skill\task.bat add mvp_v1 -t "修复数据库连接池泄漏"
-```
-
-### 完整添加（推荐）
-
-```bash
-# Windows (使用 ^ 换行)
-taskmaster-skill\task.bat add mvp_v1 ^
-  -t "实现 JWT 认证中间件" ^
-  -p "Phase 2" ^
-  -P "P0" ^
-  -d "实现基于 JWT 的 API 认证中间件，保护敏感接口" ^
-  --depends "TASK-002,TASK-007" ^
-  --criteria "支持 Bearer Token 解析^支持 Token 过期验证^支持刷新 Token 机制^错误返回 401" ^
-  --artifacts "src/middleware/auth.ts,src/services/jwt.ts" ^
-  --background "当前 API 缺乏认证保护，需要添加 JWT 认证" ^
-  --goals "实现安全的 API 认证机制^支持 Token 自动刷新" ^
-  --tech "使用 jsonwebtoken 库^RS256 算法签名^Token 有效期 2 小时" ^
-  --steps "安装依赖^实现 Token 生成^实现验证中间件^添加刷新接口^编写测试" ^
-  --notes "注意处理时钟偏移问题" ^
-  --references "https://jwt.io/introduction"
-
-# Linux/Mac (使用 \ 换行)
-./taskmaster-skill/task.sh add mvp_v1 \
-  -t "实现 JWT 认证中间件" \
-  -p "Phase 2" \
-  -P "P0" \
-  -d "实现基于 JWT 的 API 认证中间件，保护敏感接口" \
-  --depends "TASK-002,TASK-007" \
-  --criteria "支持 Bearer Token 解析
-支持 Token 过期验证
-支持刷新 Token 机制
-错误返回 401" \
-  --artifacts "src/middleware/auth.ts,src/services/jwt.ts" \
-  --background "当前 API 缺乏认证保护，需要添加 JWT 认证" \
-  --goals "实现安全的 API 认证机制
-支持 Token 自动刷新" \
-  --tech "使用 jsonwebtoken 库
-RS256 算法签名
-Token 有效期 2 小时" \
-  --steps "安装依赖
-实现 Token 生成
-实现验证中间件
-添加刷新接口
-编写测试" \
-  --notes "注意处理时钟偏移问题" \
-  --references "https://jwt.io/introduction"
-```
-
-### 添加子任务
-
-```bash
-# 将大任务拆分为子任务
-# 原任务：TASK-015 MCP Adapter 实现
-
-# 添加子任务 1
-taskmaster-skill\task.bat add mvp_v1 ^
-  -t "MCP Adapter - 进程管理" ^
-  -p "Phase 3" ^
-  -P "P0" ^
-  -d "实现 MCP Server 进程的启动、监控、停止" ^
-  --depends "TASK-012" ^
-  --criteria "实现进程启动^实现进程监控^实现进程优雅停止" ^
-  --artifacts "src/adapters/mcp/process-manager.ts"
-
-# 添加子任务 2
-taskmaster-skill\task.bat add mvp_v1 ^
-  -t "MCP Adapter - JSON-RPC 通信" ^
-  -p "Phase 3" ^
-  -P "P0" ^
-  -d "实现 JSON-RPC 消息序列化和请求响应匹配" ^
-  --depends "TASK-XXX" ^
-  --criteria "实现消息序列化^实现请求响应匹配^处理超时和错误" ^
-  --artifacts "src/adapters/mcp/protocol.ts"
+Step 4: Handle result
+  IF can_archive:
+    Ask: "核验通过，是否归档？"
+    IF yes:
+      Command: task archive mvp_v1 TASK-011
+      Confirm: "已归档"
+  ELSE:
+    Report: "发现缺失文件: [list]
+             请补充后重新核验"
 ```
 
 ---
 
-## 场景五：多任务并行
+## Scenario 3: Project Manager Check
 
-### 查看可并行的任务
+### User Input
+> "这周项目进展如何"
 
-```bash
-# 查看无依赖的待办任务
-taskmaster-skill\task.bat list mvp_v1 --status pending
+### Agent Execution
 
-# 查看特定阶段的任务
-taskmaster-skill\task.bat list mvp_v1 --phase phase_1 --status pending
 ```
+Step 1: Get overall progress
+  Command: task progress mvp_v1
+  Extract:
+    - Overall percentage
+    - Completed/Total
+    - Phase progress
+    - P0 pending count
 
-### 同时开始多个任务
+Step 2: Get weekly activity
+  Command: task logs -p mvp_v1 -n 50
+  Parse:
+    - Status changes this week
+    - Tasks completed
+    - Verifications done
 
-```bash
-# 开始任务 A
-taskmaster-skill\task.bat start mvp_v1 TASK-020
+Step 3: Generate report
+  Command: task report mvp_v1 -o ./reports/week_$(date).json
 
-# 开始任务 B（无依赖或依赖已完成）
-taskmaster-skill\task.bat start mvp_v1 TASK-021
-
-# 查看进行中的任务
-taskmaster-skill\task.bat list mvp_v1 --status in_progress
-```
-
----
-
-## 场景六：任务阻塞处理
-
-### 标记阻塞
-
-```bash
-# 任务因第三方 API 文档未发布而阻塞
-taskmaster-skill\task.bat block mvp_v1 TASK-014
-
-# 在任务文档中记录阻塞原因
-# 编辑 tasks/TASK-014_http_adapter.md
-# 添加阻塞原因：等待第三方 API 文档发布
-```
-
-### 解决阻塞
-
-```bash
-# 第三方 API 文档已发布
-# 恢复任务
-taskmaster-skill\task.bat start mvp_v1 TASK-014 --force
+Step 4: Compile summary
+  Output to user:
+    "本周项目进展:
+     - 总体进度: 27.6% (+5%)
+     - 本周完成: 3 任务
+     - 进行中: 2 任务
+     - 待开始 P0: 5 任务
+     
+     详细报告已保存至: ./reports/week_xxx.json"
 ```
 
 ---
 
-## 场景七：代码审查相关
+## Scenario 4: View Ready Tasks
 
-### 审查前
+### User Input
+> "有哪些任务可以开始？"
 
-```bash
-# 查看已完成的任务
-taskmaster-skill\task.bat list mvp_v1 --status completed
+### Agent Execution
 
-# 查看任务详情
-taskmaster-skill\task.bat show mvp_v1 TASK-015
+```
+Step 1: Query ready tasks (default 10)
+  Command: task ready mvp_v1
+  
+  Output example:
+    "🚀 AgentFabric MVP v1 - 可开始的任务
+    
+     ID        | 阶段     | 任务                    | 优先级 | 工时
+     ----------|----------|------------------------|--------|------
+     TASK-010  | Phase 2  | 健康检查接口            | P1     | 4h
+     TASK-018  | Phase 4  | 中间件链框架            | P0     | 6h
+     TASK-022  | Phase 5  | 上下文管理              | P1     | 6h
+     
+     显示 3/8 个可开始任务 (mvp_v1)
+     
+     💡 开始任务: task start mvp_v1 <task-id>"
+
+Step 2: If user wants to see more
+  Command: task ready mvp_v1 --limit 20
+
+Step 3: User selects task to start
+  Command: task start mvp_v1 TASK-018
+  Confirm: "TASK-018 已开始"
 ```
 
-### 审查不通过
+### Alternative User Input
+> "列出前5个可以开始的任务"
 
-```bash
-# 重新打开任务（手动修改 data.json 中的 status 为 in_progress）
-# 或者添加新任务修复问题
-taskmaster-skill\task.bat add mvp_v1 ^
-  -t "修复 MCP Adapter 错误处理" ^
-  -p "Phase 3" ^
-  -P "P0" ^
-  -d "代码审查发现错误处理不完善，需要修复" ^
-  --depends "TASK-015" ^
-  --criteria "完善错误类型定义^添加错误日志^补充单元测试" ^
-  --artifacts "src/adapters/mcp-adapter.ts"
+### Agent Execution
 ```
-
----
-
-## 场景八：项目收尾
-
-### 检查未完成任务
-
-```bash
-# 查看所有待办任务
-taskmaster-skill\task.bat list mvp_v1 --status pending
-
-# 查看 P0 待办
-taskmaster-skill\task.bat list mvp_v1 --status pending --priority P0
-```
-
-### 批量完成
-
-```bash
-# 逐个完成剩余任务
-taskmaster-skill\task.bat done mvp_v1 TASK-028
-taskmaster-skill\task.bat archive mvp_v1 TASK-028
-
-taskmaster-skill\task.bat done mvp_v1 TASK-029
-taskmaster-skill\task.bat archive mvp_v1 TASK-029
-```
-
-### 最终归档
-
-```bash
-# 确保所有任务已归档
-taskmaster-skill\task.bat list mvp_v1
-
-# 所有任务应该在 done/ 目录
-ls mvp_v1/tasks/done/
+Command: task ready mvp_v1 --limit 5
+Output: Top 5 ready tasks with details
 ```
 
 ---
 
-## 快捷命令汇总
+## Scenario 5: Adding New Task
 
-```bash
-# 最常用的命令
-taskmaster-skill\task.bat progress mvp_v1                    # 查看进度
-taskmaster-skill\task.bat list mvp_v1 --status pending       # 查看待办
-taskmaster-skill\task.bat list mvp_v1 --priority P0          # 查看 P0 任务
-taskmaster-skill\task.bat show mvp_v1 TASK-XXX               # 查看详情
-taskmaster-skill\task.bat start mvp_v1 TASK-XXX              # 开始任务
-taskmaster-skill\task.bat done mvp_v1 TASK-XXX               # 完成任务
-taskmaster-skill\task.bat archive mvp_v1 TASK-XXX            # 归档任务
-taskmaster-skill\task.bat add mvp_v1 -t "标题"               # 添加任务
+### User Input
+> "需要添加一个缓存预热功能"
+
+### Agent Execution
+
+```
+Step 1: Collect required parameters
+  Ask: "任务标题是什么？"
+  Receive: "实现缓存预热功能"
+
+Step 2: Collect optional parameters
+  Ask: "所属阶段？(默认: Phase 4)"
+  Receive: "Phase 4"
+  
+  Ask: "优先级？(默认: P1)"
+  Receive: "P1"
+  
+  Ask: "任务描述？"
+  Receive: "在应用启动时预加载热点数据到 Redis"
+  
+  Ask: "依赖哪些任务？(逗号分隔)"
+  Receive: "TASK-004"
+  
+  Ask: "验收标准？(每项一行)"
+  Receive: "启动时自动预热\n支持配置预热策略\n预热失败不影响启动"
+  
+  Ask: "输出产物？(逗号分隔路径)"
+  Receive: "src/services/cache-warmer.ts"
+
+Step 3: Build command
+  Command: |
+    task add mvp_v1 \
+      -t "实现缓存预热功能" \
+      -p "Phase 4" \
+      -P "P1" \
+      -d "在应用启动时预加载热点数据到 Redis" \
+      --depends "TASK-004" \
+      --criteria "启动时自动预热\n支持配置预热策略\n预热失败不影响启动" \
+      --artifacts "src/services/cache-warmer.ts"
+
+Step 4: Execute and confirm
+  Parse output: Extract new task ID (e.g., "TASK-030")
+  Confirm: "任务 TASK-030 已创建"
 ```
 
-### 创建别名（Linux/Mac）
+---
 
-```bash
-# 添加到 ~/.bashrc 或 ~/.zshrc
-alias task='~/projects/agent-fabric/docs/plans/taskmaster-skill/task.sh'
-alias tp='task progress mvp_v1'
-alias tl='task list mvp_v1'
-alias ts='task show mvp_v1'
+## Scenario 6: Quality Verification
+
+### User Input
+> "帮我检查 TASK-001 是否满足归档条件"
+
+### Agent Execution
+
+```
+Step 1: Check current status
+  Command: task show mvp_v1 TASK-001
+  Extract: status field
+
+Step 2: If not completed, report
+  IF status != "completed":
+    Output: "任务状态为 {status}，需先标记完成 (task done)"
+    Stop
+
+Step 3: Run verification
+  Command: task verify mvp_v1 TASK-001 --verbose
+  
+  Parse output:
+    - Task status: completed
+    - Artifacts: X/Y (Z%)
+    - Missing artifacts: [list or empty]
+
+Step 4: Analyze result
+  IF artifacts == 100%:
+    Output: |
+      "核验通过！
+       - 所有产物文件存在
+       - 验收标准已定义
+       - 可执行归档: task archive mvp_v1 TASK-001"
+  ELSE:
+    Output: |
+      "核验未通过！
+       - 产物完整度: Z%
+       - 缺失文件: [list]
+       - 请补充文件后重新核验"
 ```
 
-### 创建批处理（Windows）
+---
 
-创建 `task.cmd` 文件：
+## Scenario 7: Troubleshooting
 
-```batch
-@echo off
-call E:\Agent\agent-fabric\docs\plans\taskmaster-skill\task.bat %*
+### User Input
+> "为什么 TASK-003 无法归档"
+
+### Agent Execution
+
+```
+Step 1: Attempt archive to see error
+  Command: task archive mvp_v1 TASK-003
+  Capture error: "尚未通过核验"
+
+Step 2: Identify root cause
+  Analysis: Missing verification step
+  
+Step 3: Execute resolution
+  Command: task verify mvp_v1 TASK-003
+  
+  Parse:
+    IF verification passes:
+      Command: task archive mvp_v1 TASK-003
+      Confirm: "已归档"
+    IF verification fails:
+      Extract: missing artifacts
+      Output: "核验失败，缺失文件: [list]
+               请补充后重新尝试"
+
+Step 4: Document resolution
+  Output: |
+    "问题原因: 未执行核验
+     解决方案: 已执行核验并归档
+     建议流程: done → verify → archive"
+```
+
+---
+
+## Common Command Sequences
+
+### Sequence: Daily Standup
+```bash
+# 1. Get progress
+task progress mvp_v1
+
+# 2. Get in-progress tasks
+task list mvp_v1 --status in_progress
+
+# 3. Get ready-to-start tasks
+task ready mvp_v1
+
+# 4. Get pending P0
+task list mvp_v1 --status pending --priority P0
+```
+
+### Sequence: Task Handoff
+```bash
+# 1. Check dependencies
+task deps mvp_v1 TASK-XXX --recursive
+
+# 2. View task details
+task show mvp_v1 TASK-XXX
+
+# 3. Start task
+task start mvp_v1 TASK-XXX
+```
+
+### Sequence: Sprint Review
+```bash
+# 1. Overall progress
+task progress mvp_v1
+
+# 2. Completed this sprint
+task logs -p mvp_v1 -o STATUS_CHANGE -n 50
+
+# 3. Generate report
+task report mvp_v1 -o ./sprint_report.json
+```
+
+### Sequence: Audit Investigation
+```bash
+# 1. Check task history
+task logs -p mvp_v1 | grep TASK-XXX
+
+# 2. Check verification history
+task logs -p mvp_v1 -o VERIFY_TASK | grep TASK-XXX
+
+# 3. Check archive history
+task logs -p mvp_v1 -o TASK_ARCHIVED | grep TASK-XXX
+```
+
+---
+
+## Error Recovery Examples
+
+### Error: Task Not Found
+```
+User: "开始 TASK-999"
+Agent:
+  Command: task start mvp_v1 TASK-999
+  Error: "任务不存在"
+  Recovery:
+    Command: task list mvp_v1 --status pending
+    Output to user: "可用任务: TASK-001, TASK-002, ..."
+    Ask: "请选择正确的任务ID"
+```
+
+### Error: Dependencies Not Ready
+```
+User: "开始 TASK-011"
+Agent:
+  Command: task deps mvp_v1 TASK-011
+  Output: "依赖未就绪: TASK-008 (待开始)"
+  Ask: "依赖未完成，是否强制开始？(需要 --force)"
+  
+  IF user confirms:
+    Command: task start mvp_v1 TASK-011 --force
+  ELSE:
+    Output: "请先完成依赖任务 TASK-008"
+```
+
+### Error: Archive Without Verify
+```
+User: "归档 TASK-001"
+Agent:
+  Command: task archive mvp_v1 TASK-001
+  Error: "尚未通过核验"
+  Recovery:
+    Command: task verify mvp_v1 TASK-001
+    IF passes:
+      Command: task archive mvp_v1 TASK-001
+      Confirm: "已归档"
+    ELSE:
+      Output: "核验失败，请补充缺失文件"
 ```

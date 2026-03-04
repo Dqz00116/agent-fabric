@@ -1,0 +1,61 @@
+{
+  "skillPath": "E:\\Agent\\agent-fabric\\docs\\plans\\taskmaster-skill",
+  "workDir": "E:\\Agent\\agent-fabric",
+  "maxConcurrency": 3,
+  "sessionTimeout": 1800000,
+  "pollInterval": 5000,
+  "kimiCliPath": "kimi",
+  "autoApprove": true,
+  "maxContextLength": 128000,
+  "enableTaskSplit": true,
+  "splitThreshold": 0.8,
+  "maxRetries": 2,
+  "retryDelay": 5000,
+  "continueOnError400": true,
+  "continuePrompt": "继续刚才的任务",
+  "enableDifficultyAssessment": true,
+  "difficultyModelMap": {
+    "low": {
+      "name": "轻量模型",
+      "model": "moonshot-v1-8k",
+      "maxTokens": 8000,
+      "temperature": 0.7,
+      "timeout": 600000,
+      "description": "适用于简单任务，如文档更新、配置修改、小功能添加"
+    },
+    "medium": {
+      "name": "标准模型",
+      "model": "moonshot-v1-32k",
+      "maxTokens": 32000,
+      "temperature": 0.7,
+      "timeout": 1200000,
+      "description": "适用于中等复杂度任务，如 API 开发、组件实现"
+    },
+    "high": {
+      "name": "强力模型",
+      "model": "moonshot-v1-128k",
+      "maxTokens": 128000,
+      "temperature": 0.5,
+      "timeout": 2400000,
+      "description": "适用于复杂任务，如架构设计、核心模块开发"
+    }
+  },
+  "interactionConfig": {
+    "enabled": true,
+    "autoResponse": "继续执行任务，无需确认",
+    "responseDelay": 500,
+    "maxInteractions": 5,
+    "stdinCloseDelay": 2000,
+    "addAntiInteractivePrefix": true
+  },
+  "loggerConfig": {
+    "enabled": true,
+    "logDir": "./logs",
+    "maxLogFiles": 100,
+    "maxLogAge": 30,
+    "logLevel": "info",
+    "consoleOutput": false
+  },
+  "promptTemplate": "阅读{{skillPath}}\\SKILL.md这个技能，然后执行第一个可开始的任务",
+  "taskSplitPromptTemplate": "这个任务比较复杂，需要拆分成多个部分执行。请先完成以下部分："
+}

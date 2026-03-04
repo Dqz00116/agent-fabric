@@ -64,7 +64,7 @@
       "title": "项目初始化",
       "description": "初始化 Node.js + TypeScript 项目，配置开发环境",
       "hours": 4,
-      "status": "in_progress",
+      "status": "completed",
       "priority": "P0",
       "dependencies": [],
       "acceptance_criteria": [
@@ -82,7 +82,7 @@
         ".husky/",
         "src/"
       ],
-      "archived": false,
+      "archived": true,
       "content": {
         "background": "初始化 Node.js + TypeScript 项目，配置开发环境，建立项目基础骨架。",
         "goals": "1. npm run dev 可启动开发服务器\n2. npm run build 无错误\n3. npm run lint 通过\n4. Git 提交有 husky 校验",
@@ -95,7 +95,8 @@
         ],
         "notes": "Node.js 版本要求 >= 20.0.0\n使用 pnpm 作为包管理器",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T06:43:48.689Z"
     },
     {
       "id": "TASK-002",
@@ -103,17 +104,24 @@
       "title": "Fastify 框架集成",
       "description": "集成 Fastify 框架，配置基础插件",
       "hours": 4,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-001"],
+      "dependencies": [
+        "TASK-001"
+      ],
       "acceptance_criteria": [
         "服务可监听 3000 端口",
         "Swagger UI 可访问 /documentation",
         "CORS 配置生效",
         "路由自动加载工作正常"
       ],
-      "artifacts": ["src/app.ts", "src/server.ts", "src/plugins/", "src/routes/"],
-      "archived": false,
+      "artifacts": [
+        "src/app.ts",
+        "src/server.ts",
+        "src/plugins/",
+        "src/routes/"
+      ],
+      "archived": true,
       "content": {
         "background": "集成 Fastify 框架，配置基础插件，建立 HTTP 服务器基础。",
         "goals": "1. 服务可监听 3000 端口\n2. Swagger UI 可访问 /documentation\n3. CORS 配置生效\n4. 路由自动加载工作正常",
@@ -127,7 +135,8 @@
         ],
         "notes": "使用 fastify-plugin 包装插件\n配置合理的 timeout",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T06:56:24.408Z"
     },
     {
       "id": "TASK-003",
@@ -135,9 +144,11 @@
       "title": "数据库层初始化",
       "description": "配置 PostgreSQL + Prisma ORM",
       "hours": 6,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-001"],
+      "dependencies": [
+        "TASK-001"
+      ],
       "acceptance_criteria": [
         "prisma migrate dev 成功执行",
         "数据库表正确创建",
@@ -150,7 +161,7 @@
         "src/lib/prisma.ts",
         "docker-compose.db.yml"
       ],
-      "archived": false,
+      "archived": true,
       "content": {
         "background": "配置 PostgreSQL 数据库连接，集成 Prisma ORM，设计并创建基础数据表。",
         "goals": "1. prisma migrate dev 成功执行\n2. 数据库表正确创建\n3. Prisma Client 可正常查询\n4. 有数据库连接重试机制",
@@ -164,7 +175,8 @@
         ],
         "notes": "开发环境使用 docker-compose 启动 PostgreSQL\n生产环境配置连接池大小",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T06:58:15.449Z"
     },
     {
       "id": "TASK-004",
@@ -172,16 +184,21 @@
       "title": "Redis 缓存层初始化",
       "description": "配置 Redis 客户端和连接池",
       "hours": 4,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-001"],
+      "dependencies": [
+        "TASK-001"
+      ],
       "acceptance_criteria": [
         "Redis 连接成功并支持自动重连",
         "实现 set/get/del/expire 基础操作",
         "Redis 健康检查接口返回正常"
       ],
-      "artifacts": ["src/lib/redis.ts", "src/lib/cache.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/lib/redis.ts",
+        "src/lib/cache.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "配置 Redis 客户端，实现缓存层封装，提供基础缓存操作能力。",
         "goals": "1. Redis 连接成功并支持自动重连\n2. 实现 set/get/del/expire 基础操作\n3. Redis 健康检查接口返回正常",
@@ -194,7 +211,8 @@
         ],
         "notes": "使用连接池\n配置合理的重连策略",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T06:57:49.281Z"
     },
     {
       "id": "TASK-005",
@@ -202,16 +220,22 @@
       "title": "配置管理系统",
       "description": "实现环境变量加载和配置验证",
       "hours": 4,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-001"],
+      "dependencies": [
+        "TASK-001"
+      ],
       "acceptance_criteria": [
         "缺少必需配置时启动报错并提示",
         "配置验证通过才能启动",
         "配置变更可触发重载（开发环境）"
       ],
-      "artifacts": ["src/config/index.ts", "src/config/schema.ts", ".env.example"],
-      "archived": false,
+      "artifacts": [
+        "src/config/index.ts",
+        "src/config/schema.ts",
+        ".env.example"
+      ],
+      "archived": true,
       "content": {
         "background": "实现环境变量加载和配置验证，确保配置类型安全。",
         "goals": "1. 缺少必需配置时启动报错并提示\n2. 配置验证通过才能启动\n3. 配置变更可触发重载（开发环境）",
@@ -224,7 +248,8 @@
         ],
         "notes": "生产环境禁止使用 .env 文件\n敏感配置使用 Secrets 管理",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T06:59:09.528Z"
     },
     {
       "id": "TASK-006",
@@ -232,17 +257,22 @@
       "title": "日志系统搭建",
       "description": "集成 Pino 结构化日志",
       "hours": 4,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-001"],
+      "dependencies": [
+        "TASK-001"
+      ],
       "acceptance_criteria": [
         "日志输出为 JSON 格式",
         "包含 requestId、timestamp、level 字段",
         "错误日志包含堆栈信息",
         "生产环境日志级别可配置"
       ],
-      "artifacts": ["src/lib/logger.ts", "src/plugins/request-log.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/lib/logger.ts",
+        "src/plugins/request-log.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "集成 Pino 结构化日志系统，实现高性能日志记录。",
         "goals": "1. 日志输出为 JSON 格式\n2. 包含 requestId、timestamp、level 字段\n3. 错误日志包含堆栈信息\n4. 生产环境日志级别可配置",
@@ -255,7 +285,8 @@
         ],
         "notes": "异步日志避免阻塞\n敏感信息脱敏",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T07:05:44.125Z"
     },
     {
       "id": "TASK-007",
@@ -263,17 +294,22 @@
       "title": "基础 HTTP 接入",
       "description": "实现 HTTP 请求接入和处理",
       "hours": 4,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-002"],
+      "dependencies": [
+        "TASK-002"
+      ],
       "acceptance_criteria": [
         "POST/GET 请求正常处理",
         "响应格式统一为 { success, data, error, meta }",
         "错误返回标准 HTTP 状态码",
         "404 返回友好提示"
       ],
-      "artifacts": ["src/plugins/response-format.ts", "src/utils/errors.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/plugins/response-format.ts",
+        "src/utils/errors.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "实现 HTTP 请求接入和处理，建立统一的 API 响应格式。",
         "goals": "1. POST/GET 请求正常处理\n2. 响应格式统一为 { success, data, error, meta }\n3. 错误返回标准 HTTP 状态码\n4. 404 返回友好提示",
@@ -286,7 +322,8 @@
         ],
         "notes": "错误响应不要暴露内部信息\n保持响应格式一致性",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T07:16:32.474Z"
     },
     {
       "id": "TASK-008",
@@ -294,17 +331,24 @@
       "title": "API 认证机制",
       "description": "实现 API Key 认证",
       "hours": 6,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-003", "TASK-007"],
+      "dependencies": [
+        "TASK-003",
+        "TASK-007"
+      ],
       "acceptance_criteria": [
         "无 API Key 返回 401",
         "无效 API Key 返回 403",
         "认证通过可获取 namespace",
         "API Key 支持禁用/启用"
       ],
-      "artifacts": ["src/plugins/auth.ts", "src/services/api-key.ts", "src/routes/api-keys.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/plugins/auth.ts",
+        "src/services/api-key.ts",
+        "src/routes/api-keys.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "实现 API Key 认证机制，保护 API 接口安全。",
         "goals": "1. 无 API Key 返回 401\n2. 无效 API Key 返回 403\n3. 认证通过可获取 namespace\n4. API Key 支持禁用/启用",
@@ -317,7 +361,8 @@
         ],
         "notes": "API Key 存储使用 bcrypt 哈希\n支持设置过期时间",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T08:59:20.380Z"
     },
     {
       "id": "TASK-009",
@@ -325,17 +370,22 @@
       "title": "限流与熔断",
       "description": "集成 @fastify/rate-limit 实现基础限流",
       "hours": 6,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-004", "TASK-007"],
+      "dependencies": [
+        "TASK-004",
+        "TASK-007"
+      ],
       "acceptance_criteria": [
         "超过请求频率返回 429",
         "限流计数基于 Redis",
         "不同 namespace 限流隔离",
         "限流触发记录到日志"
       ],
-      "artifacts": ["src/plugins/rate-limit.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/plugins/rate-limit.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "集成限流插件，实现请求频率控制，防止服务过载。",
         "goals": "1. 超过请求频率返回 429\n2. 限流计数基于 Redis\n3. 不同 namespace 限流隔离\n4. 限流触发记录到日志",
@@ -348,7 +398,8 @@
         ],
         "notes": "使用 Redis 存储限流计数\n考虑白名单机制（预留）",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T08:54:54.645Z"
     },
     {
       "id": "TASK-010",
@@ -356,16 +407,22 @@
       "title": "健康检查接口",
       "description": "实现 /health 和 /ready 探针",
       "hours": 4,
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P1",
-      "dependencies": ["TASK-003", "TASK-004", "TASK-007"],
+      "dependencies": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-007"
+      ],
       "acceptance_criteria": [
         "/health 返回 200 和状态",
         "/ready 检查 DB 和 Redis 连接",
         "依赖不可用返回 503",
         "内存/CPU 压力检查"
       ],
-      "artifacts": ["src/routes/health.ts"],
+      "artifacts": [
+        "src/routes/health.ts"
+      ],
       "archived": false,
       "content": {
         "background": "实现健康检查接口，支持容器编排和服务监控。",
@@ -387,17 +444,23 @@
       "title": "Namespace 管理 API",
       "description": "实现 Namespace CRUD 接口",
       "hours": 6,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-003", "TASK-008"],
+      "dependencies": [
+        "TASK-003",
+        "TASK-008"
+      ],
       "acceptance_criteria": [
         "CRUD 接口全部可用",
         "返回数据包含 id, name, config",
         "删除 namespace 级联删除 agents",
         "有权限校验"
       ],
-      "artifacts": ["src/routes/namespaces.ts", "src/services/namespace.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/routes/namespaces.ts",
+        "src/services/namespace.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "实现 Namespace（命名空间）的 CRUD 管理接口，支持多租户隔离。",
         "goals": "1. CRUD 接口全部可用\n2. 返回数据包含 id, name, config\n3. 删除 namespace 级联删除 agents\n4. 有权限校验",
@@ -411,7 +474,8 @@
         ],
         "notes": "namespace 名称唯一\n删除前确认无运行中请求",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T09:11:14.678Z"
     },
     {
       "id": "TASK-012",
@@ -419,7 +483,7 @@
       "title": "统一 Agent 接口定义",
       "description": "定义 Adapter 统一接口和数据结构",
       "hours": 4,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
       "dependencies": [],
       "acceptance_criteria": [
@@ -428,8 +492,11 @@
         "支持流式和非流式",
         "文档注释完整"
       ],
-      "artifacts": ["src/adapters/types.ts", "src/adapters/base.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/adapters/types.ts",
+        "src/adapters/base.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "定义 Adapter 统一接口和数据结构，为不同协议提供统一抽象。",
         "goals": "1. TypeScript 类型完整\n2. 接口包含 connect/invoke/disconnect/healthCheck\n3. 支持流式和非流式\n4. 文档注释完整",
@@ -442,7 +509,8 @@
         ],
         "notes": "类型定义要足够灵活\n考虑向后兼容性",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T07:14:50.882Z"
     },
     {
       "id": "TASK-013",
@@ -450,17 +518,22 @@
       "title": "Agent Registry 实现",
       "description": "实现 Agent 注册中心",
       "hours": 6,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-003", "TASK-012"],
+      "dependencies": [
+        "TASK-003",
+        "TASK-012"
+      ],
       "acceptance_criteria": [
         "支持按 namespace 查询 agents",
         "Agent 变更实时生效",
         "有 Agent 健康状态缓存",
         "注册信息持久化到数据库"
       ],
-      "artifacts": ["src/services/agent-registry.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/services/agent-registry.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "实现 Agent 注册中心，管理 Agent 的生命周期和发现。",
         "goals": "1. 支持按 namespace 查询 agents\n2. Agent 变更实时生效\n3. 有 Agent 健康状态缓存\n4. 注册信息持久化到数据库",
@@ -473,7 +546,8 @@
         ],
         "notes": "使用内存缓存 + 数据库持久化\n考虑并发注册的处理",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T08:51:52.960Z"
     },
     {
       "id": "TASK-014",
@@ -481,9 +555,11 @@
       "title": "HTTP Adapter 实现",
       "description": "实现 HTTP 协议的 Agent 适配器",
       "hours": 8,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-012"],
+      "dependencies": [
+        "TASK-012"
+      ],
       "acceptance_criteria": [
         "可调用外部 HTTP API",
         "超时后返回错误",
@@ -491,8 +567,10 @@
         "SSE 流式数据正确转发",
         "非 2xx 响应正确处理"
       ],
-      "artifacts": ["src/adapters/http-adapter.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/adapters/http-adapter.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "实现 HTTP 协议的 Agent 适配器，支持调用外部 HTTP API 和 SSE 流式响应。",
         "goals": "1. 可调用外部 HTTP API\n2. 超时后返回错误\n3. 支持最多 3 次重试\n4. SSE 流式数据正确转发\n5. 非 2xx 响应正确处理",
@@ -506,7 +584,8 @@
         ],
         "notes": "使用 undici 或 node-fetch\n连接池复用",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T08:54:41.953Z"
     },
     {
       "id": "TASK-015",
@@ -514,9 +593,11 @@
       "title": "MCP Adapter (stdio) 实现",
       "description": "实现 MCP 协议的 stdio 适配器",
       "hours": 10,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-012"],
+      "dependencies": [
+        "TASK-012"
+      ],
       "acceptance_criteria": [
         "可启动本地 MCP Server 进程",
         "正确发送/接收 JSON-RPC 消息",
@@ -524,8 +605,11 @@
         "Tool 调用返回正确结果",
         "进程异常退出可检测"
       ],
-      "artifacts": ["src/adapters/mcp-adapter.ts", "src/adapters/mcp/protocol.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/adapters/mcp-adapter.ts",
+        "src/adapters/mcp/protocol.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "实现 Model Context Protocol (MCP) 的 stdio 适配器，支持本地 CLI 工具接入。",
         "goals": "1. 可启动本地 MCP Server 进程\n2. 正确发送/接收 JSON-RPC 消息\n3. 可发现 MCP Tools\n4. Tool 调用返回正确结果\n5. 进程异常退出可检测",
@@ -539,7 +623,8 @@
         ],
         "notes": "进程生命周期管理\n僵尸进程处理",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T08:54:28.217Z"
     },
     {
       "id": "TASK-016",
@@ -547,16 +632,24 @@
       "title": "Agent 管理 API",
       "description": "实现 Agent 的 CRUD 和测试接口",
       "hours": 6,
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P0",
-      "dependencies": ["TASK-011", "TASK-013", "TASK-014", "TASK-015"],
+      "dependencies": [
+        "TASK-011",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015"
+      ],
       "acceptance_criteria": [
         "CRUD 接口可用",
         "创建时验证 adapter 配置",
         "test 接口验证 Agent 可连接",
         "支持启用/禁用 Agent"
       ],
-      "artifacts": ["src/routes/agents.ts", "src/services/agent.ts"],
+      "artifacts": [
+        "src/routes/agents.ts",
+        "src/services/agent.ts"
+      ],
       "archived": false,
       "content": {
         "background": "实现 Agent 的 CRUD 管理接口和测试接口。",
@@ -579,16 +672,22 @@
       "title": "编排器 (Orchestrator) 核心",
       "description": "实现基础的请求编排器",
       "hours": 8,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-012", "TASK-013"],
+      "dependencies": [
+        "TASK-012",
+        "TASK-013"
+      ],
       "acceptance_criteria": [
         "根据 namespace + agent 名称路由",
         "找到对应 Adapter 执行",
         "返回标准响应格式",
         "执行状态正确更新"
       ],
-      "artifacts": ["src/core/orchestrator.ts", "src/core/router.ts"],
+      "artifacts": [
+        "src/core/orchestrator.ts",
+        "src/core/router.ts"
+      ],
       "archived": false,
       "content": {
         "background": "实现基础的请求编排器，负责请求路由、Agent 选择和执行管理。",
@@ -610,16 +709,21 @@
       "title": "中间件链框架",
       "description": "实现可插拔的中间件链机制",
       "hours": 6,
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P0",
-      "dependencies": ["TASK-017"],
+      "dependencies": [
+        "TASK-017"
+      ],
       "acceptance_criteria": [
         "中间件按顺序执行",
         "next() 调用进入下一个",
         "异常时中断链条",
         "支持异步中间件"
       ],
-      "artifacts": ["src/core/middleware/chain.ts", "src/core/middleware/types.ts"],
+      "artifacts": [
+        "src/core/middleware/chain.ts",
+        "src/core/middleware/types.ts"
+      ],
       "archived": false,
       "content": {
         "background": "实现可插拔的中间件链机制，支持请求的预处理和后处理。",
@@ -643,7 +747,9 @@
       "hours": 8,
       "status": "pending",
       "priority": "P0",
-      "dependencies": ["TASK-018"],
+      "dependencies": [
+        "TASK-018"
+      ],
       "acceptance_criteria": [
         "每个中间件独立可测试",
         "Session 中间件生成唯一 requestId",
@@ -677,17 +783,22 @@
       "title": "LLM Agent 内置实现",
       "description": "实现内置的 LLM Agent",
       "hours": 10,
-      "status": "pending",
+      "status": "completed",
       "priority": "P0",
-      "dependencies": ["TASK-012"],
+      "dependencies": [
+        "TASK-012"
+      ],
       "acceptance_criteria": [
         "可配置 model/temperature/maxTokens",
         "支持非流式和流式调用",
         "返回包含 token 使用量",
         "错误时返回友好提示"
       ],
-      "artifacts": ["src/agents/llm-agent.ts", "src/agents/types.ts"],
-      "archived": false,
+      "artifacts": [
+        "src/agents/llm-agent.ts",
+        "src/agents/types.ts"
+      ],
+      "archived": true,
       "content": {
         "background": "实现内置的 LLM Agent，支持调用 OpenAI 等大模型 API。",
         "goals": "1. 可配置 model/temperature/maxTokens\n2. 支持非流式和流式调用\n3. 返回包含 token 使用量\n4. 错误时返回友好提示",
@@ -701,7 +812,8 @@
         ],
         "notes": "API Key 从 Secret Context 获取\n支持自定义 baseUrl（兼容代理）",
         "references": ""
-      }
+      },
+      "archived_at": "2026-03-04T09:02:13.917Z"
     },
     {
       "id": "TASK-021",
@@ -711,14 +823,21 @@
       "hours": 8,
       "status": "pending",
       "priority": "P0",
-      "dependencies": ["TASK-017", "TASK-018", "TASK-019"],
+      "dependencies": [
+        "TASK-017",
+        "TASK-018",
+        "TASK-019"
+      ],
       "acceptance_criteria": [
         "同步调用返回完整结果",
         "异步调用返回 requestId",
         "可查询异步执行结果",
         "WebSocket 支持流式返回"
       ],
-      "artifacts": ["src/routes/invoke.ts", "src/services/executor.ts"],
+      "artifacts": [
+        "src/routes/invoke.ts",
+        "src/services/executor.ts"
+      ],
       "archived": false,
       "content": {
         "background": "实现 Agent 调用接口，支持同步、异步和流式调用。",
@@ -740,16 +859,21 @@
       "title": "上下文管理",
       "description": "实现基础上下文管理",
       "hours": 6,
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P1",
-      "dependencies": ["TASK-017"],
+      "dependencies": [
+        "TASK-017"
+      ],
       "acceptance_criteria": [
         "每次请求有独立 context",
         "context 在请求间不泄露",
         "支持 context 数据注入",
         "请求结束清理 context"
       ],
-      "artifacts": ["src/core/context/manager.ts", "src/core/context/types.ts"],
+      "artifacts": [
+        "src/core/context/manager.ts",
+        "src/core/context/types.ts"
+      ],
       "archived": false,
       "content": {
         "background": "实现基础上下文管理，支持请求级别的数据隔离和传递。",
@@ -773,14 +897,20 @@
       "hours": 6,
       "status": "pending",
       "priority": "P1",
-      "dependencies": ["TASK-003", "TASK-021"],
+      "dependencies": [
+        "TASK-003",
+        "TASK-021"
+      ],
       "acceptance_criteria": [
         "每个请求都有记录",
         "包含输入、输出、耗时、状态",
         "traceId 贯穿请求全链路",
         "错误记录包含堆栈"
       ],
-      "artifacts": ["src/services/request-logger.ts", "src/middleware/request-tracker.ts"],
+      "artifacts": [
+        "src/services/request-logger.ts",
+        "src/middleware/request-tracker.ts"
+      ],
       "archived": false,
       "content": {
         "background": "实现请求持久化和链路追踪，支持请求历史查询和问题排查。",
@@ -802,16 +932,21 @@
       "title": "基础监控指标",
       "description": "实现 Prometheus 指标暴露",
       "hours": 4,
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P1",
-      "dependencies": ["TASK-007"],
+      "dependencies": [
+        "TASK-007"
+      ],
       "acceptance_criteria": [
         "/metrics 返回 Prometheus 格式",
         "有 http_requests_total 计数",
         "有 http_request_duration 直方图",
         "按 namespace/agent 标签分类"
       ],
-      "artifacts": ["src/plugins/metrics.ts", "src/lib/metrics.ts"],
+      "artifacts": [
+        "src/plugins/metrics.ts",
+        "src/lib/metrics.ts"
+      ],
       "archived": false,
       "content": {
         "background": "实现 Prometheus 监控指标暴露，支持基础的系统监控。",
@@ -833,16 +968,22 @@
       "title": "基础测试覆盖",
       "description": "编写单元测试和集成测试",
       "hours": 10,
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P1",
-      "dependencies": ["TASK-001"],
+      "dependencies": [
+        "TASK-001"
+      ],
       "acceptance_criteria": [
         "npm test 执行通过",
         "核心模块测试覆盖率 > 70%",
         "有测试数据库隔离",
         "CI 中自动运行测试"
       ],
-      "artifacts": ["vitest.config.ts", "tests/unit/", "tests/integration/"],
+      "artifacts": [
+        "vitest.config.ts",
+        "tests/unit/",
+        "tests/integration/"
+      ],
       "archived": false,
       "content": {
         "background": "配置测试框架，编写单元测试和集成测试，确保代码质量。",
@@ -866,14 +1007,19 @@
       "hours": 8,
       "status": "pending",
       "priority": "P1",
-      "dependencies": ["TASK-025"],
+      "dependencies": [
+        "TASK-025"
+      ],
       "acceptance_criteria": [
         "覆盖 5 个核心场景",
         "使用真实数据库和 Redis",
         "测试流式调用",
         "测试错误恢复"
       ],
-      "artifacts": ["tests/e2e/", "tests/fixtures/"],
+      "artifacts": [
+        "tests/e2e/",
+        "tests/fixtures/"
+      ],
       "archived": false,
       "content": {
         "background": "编写端到端测试场景，验证完整业务链路。",
@@ -904,7 +1050,11 @@
         "包含 PostgreSQL 和 Redis",
         "服务健康检查通过"
       ],
-      "artifacts": ["Dockerfile", "docker-compose.yml", ".dockerignore"],
+      "artifacts": [
+        "Dockerfile",
+        "docker-compose.yml",
+        ".dockerignore"
+      ],
       "archived": false,
       "content": {
         "background": "编写 Docker 和 docker-compose 配置，支持容器化部署。",
@@ -926,16 +1076,20 @@
       "title": "API 文档",
       "description": "生成并完善 API 文档",
       "hours": 4,
-      "status": "pending",
+      "status": "in_progress",
       "priority": "P1",
-      "dependencies": ["TASK-002"],
+      "dependencies": [
+        "TASK-002"
+      ],
       "acceptance_criteria": [
         "Swagger UI 可查看所有接口",
         "每个接口有示例",
         "错误码表完整",
         "有 curl 调用示例"
       ],
-      "artifacts": ["docs/api/"],
+      "artifacts": [
+        "docs/api/"
+      ],
       "archived": false,
       "content": {
         "background": "生成并完善 API 文档，提供完整的使用参考。",
@@ -966,7 +1120,10 @@
         "所有配置项有说明",
         "部署步骤清晰"
       ],
-      "artifacts": ["docs/guides/", "docs/examples/"],
+      "artifacts": [
+        "docs/guides/",
+        "docs/examples/"
+      ],
       "archived": false,
       "content": {
         "background": "编写用户和开发者文档，降低使用门槛。",

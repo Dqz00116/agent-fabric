@@ -1,0 +1,39 @@
+{
+  "name": "kimi-automation-cli",
+  "version": "1.0.0",
+  "description": "Kimi CLI 全自动化任务执行工具 - 基于 TaskMaster Skill",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "kimi-auto": "dist/index.js",
+    "kauto": "dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "keywords": [
+    "kimi",
+    "cli",
+    "automation",
+    "taskmaster",
+    "parallel"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.0",
+    "p-limit": "^6.0.0",
+    "p-queue": "^8.0.0"
+  }
+}
