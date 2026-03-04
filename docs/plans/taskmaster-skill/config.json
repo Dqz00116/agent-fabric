@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "description": "TaskMaster CLI 配置文件",
+  "plans": {
+    "mvp_v1": {
+      "path": "E:\\Agent\\agent-fabric\\docs\\plans\\mvp_v1",
+      "description": "AgentFabric MVP v1 实施计划"
+    }
+  },
+  "settings": {
+    "defaultPlan": "mvp_v1",
+    "autoCreatePlan": false,
+    "logRetentionDays": 30
+  }
+}
