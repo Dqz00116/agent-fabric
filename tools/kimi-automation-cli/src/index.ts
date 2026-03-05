@@ -418,6 +418,7 @@ program
       pollInterval: 5000,
       kimiCliPath: 'kimi',
       autoApprove: true,
+      agentFile: './agent.yaml',  // 使用自定义 Agent 配置（禁用 AskUserQuestion）
       maxContextLength: 128000,
       enableTaskSplit: true,
       splitThreshold: 0.8,
@@ -471,6 +472,11 @@ program
         keepSuccessLogs: false,   // 不保留成功任务的详细日志
         keepMetadataOnly: true,   // 成功后只保留元数据摘要
         compressOldLogs: true,    // 压缩旧日志
+      },
+      subagents: {
+        enabled: true,               // 启用子 Agent
+        maxParallelSubagents: 3,     // 最大并行子 Agent 数
+        defaultTimeout: 300000,      // 默认超时 5 分钟
       },
       promptTemplate: '阅读{{skillPath}}\\SKILL.md这个技能，然后执行第一个可开始的任务',
       taskSplitPromptTemplate: '这个任务比较复杂，需要拆分成多个部分执行。请先完成以下部分：'

@@ -1,0 +1,46 @@
+# Kimi Automation CLI 专用 Agent 配置
+# 禁用交互式工具，支持自动化执行
+
+version: 1
+
+agent:
+  extend: default
+  name: kimi-automation
+  # 系统提示词参数
+  system_prompt_args:
+    ROLE_ADDITIONAL: |
+      【自动化执行模式】
+      
+      你正在以自动化模式运行。你的任务是：
+      1. 自主分析任务需求
+      2. 直接执行必要操作
+      3. 不询问用户确认
+      4. 遇到选择时自动做出最佳决策
+      
+      执行原则：
+      - 不要展示选项列表让用户选择
+      - 不要询问澄清问题
+      - 使用最佳实践直接执行
+      - 专注于交付结果
+  
+  # 排除交互式工具
+  exclude_tools:
+    - "kimi_cli.tools.ask_user:AskUserQuestion"  # 禁用交互式问答
+  
+  # 子 Agent 定义
+  subagents:
+    coder:
+      path: ./subagents/coder.yaml
+      description: "执行代码编写和修改任务"
+    
+    reviewer:
+      path: ./subagents/reviewer.yaml
+      description: "执行代码审查和检查任务"
+    
+    researcher:
+      path: ./subagents/researcher.yaml
+      description: "执行信息搜索和研究任务"
+    
+    test_runner:
+      path: ./subagents/test-runner.yaml
+      description: "执行测试和验证任务"

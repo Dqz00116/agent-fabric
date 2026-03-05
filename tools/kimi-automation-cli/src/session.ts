@@ -5,7 +5,8 @@
 
 import { spawn } from 'child_process';
 import type { SessionConfig, SessionResult, SubTask, ModelConfig, TaskDifficulty } from './types.js';
-import { InteractionHandler, generateNonInteractivePrompt } from './interaction-handler.js';
+import { InteractionHandler, generateNonInteractivePrompt, generateK25NonInteractivePrompt } from './interaction-handler.js';
+import { SubAgentManager, type SubAgentTask } from './subagent-manager.js';
 import { SessionLogger, LogManager } from './logger.js';
 
 export interface SessionManagerConfig {
@@ -20,6 +21,7 @@ export interface SessionManagerConfig {
   maxContextLength: number;
   enableDifficultyAssessment: boolean;
   difficultyModelMap: Record<TaskDifficulty, ModelConfig>;
+  agentFile?: string;  // Agent 配置文件路径
   interactionConfig: {
     enabled: boolean;
     autoResponse: string;
@@ -44,10 +46,29 @@ export class SessionManager {
   private interactionHandlers: Map<string, InteractionHandler> = new Map();
   private loggers: Map<string, SessionLogger> = new Map();
   private logManager: LogManager;
+  private subAgentManager: SubAgentManager;
   
   constructor(config: SessionManagerConfig) {
     this.config = config;
     this.logManager = new LogManager(config.loggerConfig);
+    this.subAgentManager = new SubAgentManager({
+      ...config,
+      planPath: '',
+      planName: '',
+      skillPath: '',
+      maxConcurrency: 1,
+      sessionTimeout: config.timeout,
+      pollInterval: 5000,
+      enableTaskSplit: false,
+      splitThreshold: 0.8,
+      subagents: {
+        enabled: true,
+        maxParallelSubagents: 3,
+        defaultTimeout: 300000,
+      },
+      promptTemplate: '',
+      taskSplitPromptTemplate: '',
+    } as any);
   }
   
   /**
@@ -80,24 +101,37 @@ export class SessionManager {
   
   /**
    * 准备提示词（添加防交互前缀）
+   * 根据模型类型选择不同强度的提示词
    */
-  private preparePrompt(prompt: string): string {
-    if (this.config.interactionConfig.addAntiInteractivePrefix) {
-      return generateNonInteractivePrompt(prompt);
+  private preparePrompt(prompt: string, model?: string): string {
+    if (!this.config.interactionConfig.addAntiInteractivePrefix) {
+      return prompt;
     }
-    return prompt;
+    
+    // k2.5 系列模型使用更强的非交互提示词
+    const isK25Model = model && (
+      model.includes('k2.5') || 
+      model.includes('k2-5') ||
+      model.includes('kimi-k2')
+    );
+    
+    if (isK25Model) {
+      return generateK25NonInteractivePrompt(prompt);
+    }
+    
+    return generateNonInteractivePrompt(prompt);
   }
   
   /**
    * 执行 Session（支持子任务和重试）
    */
   async execute(sessionConfig: SessionConfig): Promise<SessionResult> {
-    // 准备提示词（添加防交互前缀）
-    sessionConfig.prompt = this.preparePrompt(sessionConfig.prompt);
-    
     // 获取模型配置
     const modelConfig = sessionConfig.modelConfig || 
       this.getModelForDifficulty(sessionConfig.difficulty);
+    
+    // 准备提示词（添加防交互前缀，传入模型信息）
+    sessionConfig.prompt = this.preparePrompt(sessionConfig.prompt, modelConfig.model);
     
     // 如果有子任务，按顺序执行
     if (sessionConfig.subTasks && sessionConfig.subTasks.length > 0) {
@@ -131,7 +165,7 @@ export class SessionManager {
       const subSessionConfig: SessionConfig = {
         ...sessionConfig,
         id: `${sessionConfig.id}-sub${i + 1}`,
-        prompt: this.preparePrompt(subTask.prompt),
+        prompt: this.preparePrompt(subTask.prompt, modelConfig.model),
         modelConfig, // 继承父任务的模型配置
       };
       
@@ -259,7 +293,7 @@ export class SessionManager {
     const continueConfig: SessionConfig = {
       ...originalConfig,
       id: `${originalConfig.id}-continue`,
-      prompt: this.preparePrompt(this.config.continuePrompt),
+      prompt: this.preparePrompt(this.config.continuePrompt, modelConfig.model),
       isContinuation: true,
       originalPrompt: originalConfig.prompt,
       modelConfig,
@@ -427,6 +461,10 @@ export class SessionManager {
       args.push('--model', modelConfig.model);
     }
     
+    // 添加 Agent 配置文件（如果配置了）
+    if (this.config.agentFile) {
+      args.push('--agent-file', this.config.agentFile);
+    }
     
     return args;
   }
@@ -505,6 +543,50 @@ export class SessionManager {
   
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
+  /**
+   * 使用子 Agent 并行执行任务
+   * 适用于需要多种能力并行处理的场景
+   */
+  async executeWithSubAgents(
+    sessionConfig: SessionConfig,
+    subAgentTasks: SubAgentTask[]
+  ): Promise<SessionResult> {
+    if (!this.config.agentFile) {
+      // 如果没有配置 Agent 文件，回退到普通执行
+      console.log('[SessionManager] 未配置 Agent 文件，使用普通执行模式');
+      return this.execute(sessionConfig);
+    }
+
+    console.log(`[SessionManager] 使用子 Agent 并行执行 ${subAgentTasks.length} 个任务`);
+    
+    const startTime = Date.now();
+    const results = await this.subAgentManager.executeParallel(subAgentTasks);
+    
+    const successCount = results.filter(r => r.success).length;
+    const totalDuration = Date.now() - startTime;
+    
+    // 合并结果
+    const combinedOutput = results.map(r => {
+      return `=== ${r.taskId} ===\n成功: ${r.success}\n耗时: ${r.duration}ms\n输出:\n${r.output}${r.error ? `\n错误: ${r.error}` : ''}`;
+    }).join('\n\n');
+    
+    const allSuccess = successCount === results.length;
+    
+    return {
+      success: allSuccess,
+      output: combinedOutput,
+      error: allSuccess ? undefined : `${results.length - successCount} 个子任务失败`,
+      duration: totalDuration,
+    };
+  }
+  
+  /**
+   * 获取子 Agent 管理器
+   */
+  getSubAgentManager(): SubAgentManager {
+    return this.subAgentManager;
   }
 }
 

@@ -157,6 +157,7 @@ export interface AutomationConfig {
   // Kimi CLI 配置
   kimiCliPath: string;
   autoApprove: boolean;
+  agentFile?: string;           // 自定义 Agent 配置文件路径
   
   // 上下文管理配置
   maxContextLength: number;    // 最大上下文长度（tokens）
@@ -200,6 +201,13 @@ export interface AutomationConfig {
   // 提示词模板
   promptTemplate: string;
   taskSplitPromptTemplate: string;
+  
+  // 子 Agent 配置
+  subagents?: {
+    enabled: boolean;              // 是否启用子 Agent
+    maxParallelSubagents: number;  // 最大并行子 Agent 数量
+    defaultTimeout: number;        // 子 Agent 默认超时（毫秒）
+  };
 }
 
 /** 执行统计 */
