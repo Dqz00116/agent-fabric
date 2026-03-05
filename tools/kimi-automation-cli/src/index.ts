@@ -419,6 +419,7 @@ program
       kimiCliPath: 'kimi',
       autoApprove: true,
       agentFile: './agent.yaml',  // 使用自定义 Agent 配置（禁用 AskUserQuestion）
+      outputFormat: 'text',       // 输出格式: text 或 json
       maxContextLength: 128000,
       enableTaskSplit: true,
       splitThreshold: 0.8,

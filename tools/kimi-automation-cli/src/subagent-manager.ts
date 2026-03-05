@@ -203,17 +203,22 @@ export class SubAgentManager {
 
   /**
    * 构建子 Agent 参数
+   * 使用 --quiet 模式只输出最终结果
    */
   private buildSubAgentArgs(task: SubAgentTask): string[] {
     const args: string[] = [
       '--work-dir', task.workDir || this.config.workDir,
-      '--print',
-      '--yolo',
+      '--quiet',  // 只输出最终结果，减少噪音
     ];
 
     // 使用主 Agent 配置（包含子 Agent 定义）
     if (this.config.agentFile) {
       args.push('--agent-file', this.config.agentFile);
+    }
+    
+    // 添加输出格式（如果配置了 JSON）
+    if (this.config.outputFormat === 'json') {
+      args.push('--output-format', 'stream-json');
     }
 
     return args;

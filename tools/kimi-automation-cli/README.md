@@ -10,8 +10,11 @@ Kimi CLI 全自动化任务执行工具 - 基于 TaskMaster Skill 实现多 Sess
 - **上下文长度智能评估**: 自动评估任务的上下文需求，超过阈值时自动拆分任务
 - **错误400自动继续**: 检测错误400（上下文长度超限），自动发送"继续刚才的任务"继续执行
 - **交互式对话自动处理**: 检测 Kimi CLI 的交互请求（确认、输入、选择等），自动响应
-- **日志系统**: 为每个 Session 创建独立日志文件，记录完整输出和元数据
-- **并行执行**: 支持同时运行多个 Kimi CLI Session
+- **Agent 配置支持**: 使用自定义 Agent 配置，禁用 AskUserQuestion 等交互式工具
+- **子 Agent 并行执行**: 支持使用子 Agent 并行处理多个独立任务
+- **Print 模式优化**: 使用 `--quiet` 模式，只输出最终结果，减少噪音
+- **JSON 输出支持**: 可选 JSON 格式输出，便于程序化处理
+- **日志系统**: 按 Task 合并日志，成功任务自动压缩为摘要
 
 ## 安装
 
@@ -220,6 +223,37 @@ kimi-auto run --dry-run
 | `loggerConfig.maxLogAge` | 最大保留天数 | 30 |
 | `loggerConfig.logLevel` | 日志级别 | info |
 | `loggerConfig.consoleOutput` | 同时输出到控制台 | false |
+| `loggerConfig.groupByTask` | 按 Task 合并日志 | true |
+| `loggerConfig.keepSuccessLogs` | 保留成功任务详细日志 | false |
+| `loggerConfig.keepMetadataOnly` | 成功后只保留元数据 | true |
+| `loggerConfig.compressOldLogs` | 压缩旧日志 | true |
+
+#### Print 模式配置
+
+使用 `--quiet` 模式（推荐），只输出最终结果，跳过中间工具调用过程：
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `outputFormat` | 输出格式：`text` 或 `json` | text |
+
+**text 模式**: 直接输出 AI 的最终回复文本
+**json 模式**: 输出 JSONL 格式，便于程序化处理
+
+#### Agent 配置
+
+使用自定义 Agent 配置，禁用交互式工具：
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `agentFile` | Agent 配置文件路径 | ./agent.yaml |
+
+**子 Agent 配置**:
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `subagents.enabled` | 启用子 Agent | true |
+| `subagents.maxParallelSubagents` | 最大并行子 Agent 数 | 3 |
+| `subagents.defaultTimeout` | 默认超时（毫秒） | 300000 |
 
 ## 工作流程
 
@@ -425,6 +459,113 @@ type logs\2024-01-15T10-30-00-000Z_TASK-016_xxx.log
     "enabled": false
   }
 }
+```
+
+## Agent 配置详解
+
+### 主 Agent 配置 (agent.yaml)
+
+```yaml
+version: 1
+
+agent:
+  extend: default
+  name: kimi-automation
+  
+  # 排除交互式工具，实现完全自动化
+  exclude_tools:
+    - "kimi_cli.tools.ask_user:AskUserQuestion"
+  
+  # 子 Agent 定义
+  subagents:
+    coder:
+      path: ./subagents/coder.yaml
+      description: "处理编码任务"
+    reviewer:
+      path: ./subagents/reviewer.yaml
+      description: "代码审查专家"
+    researcher:
+      path: ./subagents/researcher.yaml
+      description: "信息搜索研究"
+    test_runner:
+      path: ./subagents/test-runner.yaml
+      description: "测试执行验证"
+```
+
+### 子 Agent 配置示例 (subagents/coder.yaml)
+
+```yaml
+version: 1
+
+agent:
+  extend: ../agent.yaml
+  name: coder
+  
+  system_prompt_args:
+    ROLE_ADDITIONAL: |
+      【代码编写专家】
+      
+      你的专长是编写高质量代码。
+      不要询问确认，直接完成编码。
+  
+  # 排除 Task 工具避免嵌套
+  exclude_tools:
+    - "kimi_cli.tools.ask_user:AskUserQuestion"
+    - "kimi_cli.tools.multiagent:Task"
+```
+
+### 使用子 Agent 并行执行任务
+
+```typescript
+import { SessionManager } from './session';
+
+const sessionManager = new SessionManager(config);
+
+// 定义子 Agent 任务
+const subAgentTasks = [
+  {
+    id: 'code-task',
+    name: '编写代码',
+    subagentName: 'coder',
+    description: '实现用户认证功能',
+    prompt: '请编写一个用户认证模块...'
+  },
+  {
+    id: 'review-task',
+    name: '代码审查',
+    subagentName: 'reviewer',
+    description: '审查用户认证代码',
+    prompt: '请审查这段代码...',
+    dependencies: ['code-task']  // 依赖 code-task 完成后执行
+  }
+];
+
+// 并行执行
+const results = await sessionManager.executeWithSubAgents(
+  sessionConfig,
+  subAgentTasks
+);
+```
+
+## Print 模式优势
+
+使用 `--quiet` 参数（而非 `--print --yolo`）：
+
+1. **只输出最终结果** - 跳过中间工具调用过程，减少噪音
+2. **自动批准** - 隐式启用 yolo 模式，无需额外参数
+3. **非交互执行** - 执行完成后自动退出
+4. **支持 JSON 输出** - 可选 `--output-format stream-json` 便于程序化处理
+
+### 输出格式对比
+
+**text 模式** (默认):
+```
+已成功创建用户认证模块，包含登录、注册、JWT Token 生成等功能...
+```
+
+**json 模式**:
+```jsonl
+{"role":"assistant","content":"已成功创建用户认证模块..."}
 ```
 
 ## 许可证

@@ -158,6 +158,7 @@ export interface AutomationConfig {
   kimiCliPath: string;
   autoApprove: boolean;
   agentFile?: string;           // 自定义 Agent 配置文件路径
+  outputFormat?: 'text' | 'json';  // 输出格式: text 或 json
   
   // 上下文管理配置
   maxContextLength: number;    // 最大上下文长度（tokens）

@@ -22,6 +22,7 @@ export interface SessionManagerConfig {
   enableDifficultyAssessment: boolean;
   difficultyModelMap: Record<TaskDifficulty, ModelConfig>;
   agentFile?: string;  // Agent 配置文件路径
+  outputFormat?: 'text' | 'json';  // 输出格式
   interactionConfig: {
     enabled: boolean;
     autoResponse: string;
@@ -447,13 +448,14 @@ export class SessionManager {
   
   /**
    * 构建 Kimi CLI 参数
+   * 优化: 使用 --quiet 模式减少输出噪音，支持 JSON 格式
    */
   private buildKimiArgs(sessionConfig: SessionConfig, modelConfig: ModelConfig): string[] {
+    // 使用 --quiet 代替 --print --yolo，更简洁且自动启用 --final-message-only
     const args: string[] = [
       '--work-dir', this.config.workDir,
       '--session', sessionConfig.id,
-      '--print',
-      '--yolo',
+      '--quiet',           // 只输出最终结果，跳过中间工具调用
     ];
     
     // 添加模型参数（如果配置了）
@@ -464,6 +466,11 @@ export class SessionManager {
     // 添加 Agent 配置文件（如果配置了）
     if (this.config.agentFile) {
       args.push('--agent-file', this.config.agentFile);
+    }
+    
+    // 添加输出格式（如果配置了 JSON）
+    if (this.config.outputFormat === 'json') {
+      args.push('--output-format', 'stream-json');
     }
     
     return args;
